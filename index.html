@@ -4,44 +4,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Airport Route Atlas - 3D Satellite</title>
-    <!-- Load specific version to ensure stability -->
-    <script src="https://unpkg.com/globe.gl@2.32.0/dist/globe.gl.min.js"></script>
+    <title>Airport Route Atlas</title>
     <link rel="stylesheet" href="style.css">
+
+    <!-- Dependencies -->
+    <script src="https://unpkg.com/globe.gl"></script>
+    <!-- We will use ES modules for the main logic, but globe.gl is loaded as a global script for simplicity with some versions, 
+         or we can import it if we use the module version. The example used a script tag. 
+         Let's stick to the script tag for globe.gl to match the example, but use modules for our logic. -->
 </head>
 
 <body>
     <div id="globeViz"></div>
-
-    <div class="overlay">
-        <h1>Global Flight Network</h1>
-        <p>Real-time visualization of international air travel routes.</p>
-
-        <div class="controls-section">
-            <div class="control-group">
-                <label for="rotateToggle">Auto-Rotation</label>
-                <input type="checkbox" id="rotateToggle" checked>
-            </div>
-
-            <div class="control-group">
-                <label for="categorySelect">Airport Size</label>
-                <select id="categorySelect">
-                    <option value="All">All Sizes</option>
-                    <option value="Large">Large</option>
-                    <option value="Medium">Medium</option>
-                    <option value="Small">Small</option>
-                </select>
-            </div>
-        </div>
-
-        <div class="instructions">
-            • Drag to rotate<br>
-            • Scroll to zoom<br>
-            • Click airport to focus
-        </div>
+    <div id="ui-layer">
+        <h1>Airport Route Atlas</h1>
+        <p>Click an airport to view outbound routes.</p>
+        <div id="loading">Loading flight data...</div>
     </div>
 
-    <script src="main.js"></script>
+    <script type="module" src="main.js"></script>
 </body>
 
 </html>

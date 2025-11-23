@@ -1,109 +1,77 @@
-// --- DATA ---
+// Configuration
+const OPACITY = 0.4;
+const AIRPORT_COLOR = '#00e5ff'; // Cyan/Teal
+const AIRPORT_SELECTED_COLOR = '#ff0055'; // Pink/Red
+const ROUTE_COLOR = ['rgba(0, 229, 255, 0.5)', 'rgba(255, 0, 85, 0.5)']; // Gradient
+
+// Hardcoded Data
 const AIRPORTS = [
-    { id: 'JFK', name: 'New York (JFK)', lat: 40.6413, lng: -73.7781, country: 'USA', category: 'Large' },
-    { id: 'LHR', name: 'London (LHR)', lat: 51.4700, lng: -0.4543, country: 'UK', category: 'Large' },
-    { id: 'HND', name: 'Tokyo (HND)', lat: 35.5494, lng: 139.7798, country: 'Japan', category: 'Large' },
-    { id: 'DXB', name: 'Dubai (DXB)', lat: 25.2532, lng: 55.3644, country: 'UAE', category: 'Large' },
-    { id: 'SYD', name: 'Sydney (SYD)', lat: -33.9461, lng: 151.1772, country: 'Australia', category: 'Medium' },
-    { id: 'LAX', name: 'Los Angeles (LAX)', lat: 33.9416, lng: -118.4085, country: 'USA', category: 'Medium' },
-    { id: 'CDG', name: 'Paris (CDG)', lat: 49.0097, lng: 2.5479, country: 'France', category: 'Medium' },
-    { id: 'SIN', name: 'Singapore (SIN)', lat: 1.3644, lng: 103.9915, country: 'Singapore', category: 'Medium' },
-    { id: 'GRU', name: 'Sao Paulo (GRU)', lat: -23.4356, lng: -46.4730, country: 'Brazil', category: 'Small' },
-    { id: 'JNB', name: 'Johannesburg (JNB)', lat: -26.1367, lng: 28.2460, country: 'South Africa', category: 'Small' }
+    { iata: 'LHR', name: 'London Heathrow', lat: 51.4700, lng: -0.4543, country: 'United Kingdom' },
+    { iata: 'JFK', name: 'New York JFK', lat: 40.6413, lng: -73.7781, country: 'United States' },
+    { iata: 'CDG', name: 'Paris Charles de Gaulle', lat: 49.0097, lng: 2.5479, country: 'France' }
 ];
 
 const ROUTES = [
-    { src: 'JFK', dst: 'LHR' }, { src: 'JFK', dst: 'HND' }, { src: 'JFK', dst: 'DXB' }, { src: 'JFK', dst: 'LAX' },
-    { src: 'LHR', dst: 'JFK' }, { src: 'LHR', dst: 'SIN' }, { src: 'LHR', dst: 'JNB' },
-    { src: 'HND', dst: 'LAX' }, { src: 'HND', dst: 'SYD' }, { src: 'HND', dst: 'SIN' },
-    { src: 'DXB', dst: 'LHR' }, { src: 'DXB', dst: 'JFK' }, { src: 'DXB', dst: 'SYD' },
-    { src: 'SYD', dst: 'LAX' }, { src: 'SYD', dst: 'HND' },
-    { src: 'LAX', dst: 'JFK' }, { src: 'LAX', dst: 'HND' }, { src: 'LAX', dst: 'SYD' },
-    { src: 'SIN', dst: 'LHR' }, { src: 'SIN', dst: 'HND' },
-    { src: 'GRU', dst: 'JFK' }, { src: 'GRU', dst: 'CDG' }
+    { srcIata: 'LHR', dstIata: 'JFK' },
+    { srcIata: 'LHR', dstIata: 'CDG' }
 ];
 
-// --- INITIALIZATION ---
-const world = Globe()
+// Initialize Globe
+const globe = Globe()
     (document.getElementById('globeViz'))
-    .globeImageUrl('//unpkg.com/three-globe/example/img/earth-night.jpg')
-    .backgroundImageUrl('//unpkg.com/three-globe/example/img/night-sky.png')
+    .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
+    .backgroundImageUrl('https://unpkg.com/three-globe/example/img/night-sky.png')
+
+    // Points (Airports)
     .pointsData(AIRPORTS)
-    .pointAltitude(0.02)
-    .pointColor(() => '#ffb703')
-    .pointRadius(0.5)
-    .pointLabel('name')
-    .onPointClick(handlePointClick)
-    .arcsColor(() => '#4cc9f0')
+    .pointColor(() => AIRPORT_COLOR)
+    .pointAltitude(0.02) // Slightly raised
+    .pointRadius(0.5) // Larger for visibility
+    .pointLabel(d => `<b>${d.name} (${d.iata})</b><br>${d.country}`) // Hover label
+    .onPointClick(handleAirportClick)
+
+    // Arcs (Routes)
+    .arcColor(() => ROUTE_COLOR)
     .arcDashLength(0.4)
     .arcDashGap(0.2)
-    .arcDashAnimateTime(1500)
-    .arcStroke(0.5);
+    .arcDashAnimateTime(0) // Static
+    .arcStroke(0.5)
+    .arcsData([]); // Start empty
 
-// Auto-rotate
-world.controls().autoRotate = true;
-world.controls().autoRotateSpeed = 0.5;
+// Tile Engine Setup
+const SATELLITE_TILES = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+globe.tilesData([{
+    bmp: (x, y, z) => SATELLITE_TILES.replace('{z}', z).replace('{x}', x).replace('{y}', y)
+}]);
 
-// --- INTERACTION ---
+// Interaction Handler
+function handleAirportClick(airport) {
+    if (!airport) return;
 
-function handlePointClick(airport) {
+    console.log("Clicked airport:", airport);
+
     // Find routes starting from this airport
-    const relevantRoutes = ROUTES.filter(r => r.src === airport.id);
-    
-    // Map routes to objects with lat/lng
-    const arcsData = relevantRoutes.map(route => {
-        const src = AIRPORTS.find(a => a.id === route.src);
-        const dst = AIRPORTS.find(a => a.id === route.dst);
+    const activeRoutes = ROUTES.filter(r => r.srcIata === airport.iata).map(r => {
+        const src = AIRPORTS.find(a => a.iata === r.srcIata);
+        const dst = AIRPORTS.find(a => a.iata === r.dstIata);
         return {
             startLat: src.lat,
             startLng: src.lng,
             endLat: dst.lat,
-            endLng: dst.lng
+            endLng: dst.lng,
+            ...r
         };
     });
 
-    world.arcsData(arcsData);
-    
-    // Focus on the clicked airport
-    world.pointOfView({ lat: airport.lat, lng: airport.lng, altitude: 1.5 }, 1000);
+    console.log("Found routes:", activeRoutes);
+
+    // Update Globe Arcs
+    globe.arcsData(activeRoutes);
+
+    // Optional: Focus camera
+    globe.pointOfView({ lat: airport.lat, lng: airport.lng, altitude: 1.5 }, 1000);
 }
 
-// --- CONTROLS ---
-
-// 1. Rotation Toggle
-const rotateToggle = document.getElementById('rotateToggle');
-rotateToggle.addEventListener('change', (e) => {
-    world.controls().autoRotate = e.target.checked;
-});
-
-// 2. Category Filter
-const categorySelect = document.getElementById('categorySelect');
-categorySelect.addEventListener('change', (e) => {
-    const category = e.target.value;
-    let filteredAirports = AIRPORTS;
-
-    if (category !== 'All') {
-        filteredAirports = AIRPORTS.filter(a => a.category === category);
-    }
-
-    world.pointsData(filteredAirports);
-
-    // Clear routes when filtering to avoid confusion
-    world.arcsData([]);
-});
-
-// Stop rotation on user interaction (and update toggle)
-const container = document.getElementById('globeViz');
-const stopRotation = () => {
-    world.controls().autoRotate = false;
-    rotateToggle.checked = false;
-};
-
-container.addEventListener('mousedown', stopRotation);
-container.addEventListener('touchstart', stopRotation);
-
-// Responsive resize
-window.addEventListener('resize', () => {
-    world.width(window.innerWidth);
-    world.height(window.innerHeight);
-});
+// Initial State
+document.getElementById('loading').style.display = 'none';
+console.log("Globe initialized with hardcoded data.");
