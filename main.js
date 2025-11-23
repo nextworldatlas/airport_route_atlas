@@ -40,9 +40,7 @@ const globe = Globe()
 
 // Tile Engine Setup
 const SATELLITE_TILES = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
-globe.tilesData([{
-    bmp: (x, y, z) => SATELLITE_TILES.replace('{z}', z).replace('{x}', x).replace('{y}', y)
-}]);
+globe.globeTileEngineUrl((x, y, z) => SATELLITE_TILES.replace('{z}', z).replace('{x}', x).replace('{y}', y));
 
 // Interaction Handler
 function handleAirportClick(airport) {
