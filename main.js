@@ -1,20 +1,14 @@
+import { csvParse } from 'https://esm.sh/d3-dsv';
+
 // Configuration
 const OPACITY = 0.4;
 const AIRPORT_COLOR = '#00e5ff'; // Cyan/Teal
 const AIRPORT_SELECTED_COLOR = '#ff0055'; // Pink/Red
 const ROUTE_COLOR = ['rgba(0, 229, 255, 0.5)', 'rgba(255, 0, 85, 0.5)']; // Gradient
 
-// Hardcoded Data
-const AIRPORTS = [
-    { iata: 'LHR', name: 'London Heathrow', lat: 51.4700, lng: -0.4543, country: 'United Kingdom' },
-    { iata: 'JFK', name: 'New York JFK', lat: 40.6413, lng: -73.7781, country: 'United States' },
-    { iata: 'CDG', name: 'Paris Charles de Gaulle', lat: 49.0097, lng: 2.5479, country: 'France' }
-];
-
-const ROUTES = [
-    { srcIata: 'LHR', dstIata: 'JFK' },
-    { srcIata: 'LHR', dstIata: 'CDG' }
-];
+// Global Data Containers
+let AIRPORTS = [];
+let ROUTES = [];
 
 // Initialize Globe
 const globe = Globe()
@@ -23,7 +17,6 @@ const globe = Globe()
     .backgroundImageUrl('https://unpkg.com/three-globe/example/img/night-sky.png')
 
     // Points (Airports)
-    .pointsData(AIRPORTS)
     .pointColor(() => AIRPORT_COLOR)
     .pointAltitude(0.02) // Slightly raised
     .pointRadius(0.5) // Larger for visibility
@@ -52,14 +45,17 @@ function handleAirportClick(airport) {
     const activeRoutes = ROUTES.filter(r => r.srcIata === airport.iata).map(r => {
         const src = AIRPORTS.find(a => a.iata === r.srcIata);
         const dst = AIRPORTS.find(a => a.iata === r.dstIata);
+
+        if (!src || !dst) return null;
+
         return {
-            startLat: src.lat,
-            startLng: src.lng,
-            endLat: dst.lat,
-            endLng: dst.lng,
+            startLat: parseFloat(src.lat),
+            startLng: parseFloat(src.lng),
+            endLat: parseFloat(dst.lat),
+            endLng: parseFloat(dst.lng),
             ...r
         };
-    });
+    }).filter(r => r !== null);
 
     console.log("Found routes:", activeRoutes);
 
@@ -67,9 +63,32 @@ function handleAirportClick(airport) {
     globe.arcsData(activeRoutes);
 
     // Optional: Focus camera
-    globe.pointOfView({ lat: airport.lat, lng: airport.lng, altitude: 1.5 }, 1000);
+    globe.pointOfView({ lat: parseFloat(airport.lat), lng: parseFloat(airport.lng), altitude: 1.5 }, 1000);
 }
 
-// Initial State
-document.getElementById('loading').style.display = 'none';
-console.log("Globe initialized with hardcoded data.");
+// Data Loading
+async function loadData() {
+    try {
+        const [airportsText, routesText] = await Promise.all([
+            fetch('airports.csv').then(res => res.text()),
+            fetch('routes.csv').then(res => res.text())
+        ]);
+
+        AIRPORTS = csvParse(airportsText);
+        ROUTES = csvParse(routesText);
+
+        console.log(`Loaded ${AIRPORTS.length} airports and ${ROUTES.length} routes.`);
+
+        // Initial Render
+        globe.pointsData(AIRPORTS);
+
+        document.getElementById('loading').style.display = 'none';
+
+    } catch (err) {
+        console.error("Error loading data:", err);
+        document.getElementById('loading').textContent = "Error loading data.";
+    }
+}
+
+// Start
+loadData();
