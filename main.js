@@ -2,13 +2,16 @@ import { csvParse } from 'https://esm.sh/d3-dsv';
 
 // Configuration
 const OPACITY = 0.4;
-const AIRPORT_COLOR = '#00e5ff'; // Cyan/Teal
-const AIRPORT_SELECTED_COLOR = '#ff0055'; // Pink/Red
-const ROUTE_COLOR = ['rgba(0, 229, 255, 0.5)', 'rgba(255, 0, 85, 0.5)']; // Gradient
+const AIRPORT_COLOR = '#8ddcff'; // Cyan/Teal (Unselected Color)
+const AIRPORT_SELECTED_COLOR = '#991933'; // Pink/Red (Selected Color)
+const ROUTE_COLOR = '#ffffff';
+const DEFAULT_RADIUS = 0.5; // Initial/Unselected Radius
+const SHRINK_RADIUS = 0.2; // Radius for non-selected airports
 
 // Global Data Containers
 let AIRPORTS = [];
 let ROUTES = [];
+let selectedAirport = null; // Variable to track the currently selected airport
 
 // Initialize Globe
 const globe = Globe()
@@ -17,18 +20,32 @@ const globe = Globe()
     .backgroundImageUrl('https://unpkg.com/three-globe/example/img/night-sky.png')
 
     // Points (Airports)
-    .pointColor(() => AIRPORT_COLOR)
+    .pointColor(d => d === selectedAirport ? AIRPORT_SELECTED_COLOR : AIRPORT_COLOR)
     .pointAltitude(0.02) // Slightly raised
-    .pointRadius(0.5) // Larger for visibility
+
+    // Dynamic Radius logic:
+    .pointRadius(d => {
+        if (selectedAirport === null) {
+            // No airport selected, all are default size
+            return DEFAULT_RADIUS;
+        } else if (d === selectedAirport) {
+            // The selected airport is its default size
+            return DEFAULT_RADIUS;
+        } else {
+            // Other airports shrink
+            return SHRINK_RADIUS;
+        }
+    })
+
     .pointLabel(d => `<b>${d.name} (${d.iata})</b><br>${d.country}`) // Hover label
     .onPointClick(handleAirportClick)
 
     // Arcs (Routes)
     .arcColor(() => ROUTE_COLOR)
-    .arcDashLength(0.4)
-    .arcDashGap(0.2)
+    .arcDashLength(1)
+    .arcDashGap(0)
     .arcDashAnimateTime(0) // Static
-    .arcStroke(0.5)
+    .arcStroke(0.25)
     .arcsData([]); // Start empty
 
 // Tile Engine Setup
@@ -39,31 +56,47 @@ globe.globeTileEngineUrl((x, y, z) => SATELLITE_TILES.replace('{z}', z).replace(
 function handleAirportClick(airport) {
     if (!airport) return;
 
-    console.log("Clicked airport:", airport);
+    // Check if the same airport was clicked (for unselecting/toggling)
+    const isSameAirport = airport === selectedAirport;
 
-    // Find routes starting from this airport
-    const activeRoutes = ROUTES.filter(r => r.srcIata === airport.iata).map(r => {
-        const src = AIRPORTS.find(a => a.iata === r.srcIata);
-        const dst = AIRPORTS.find(a => a.iata === r.dstIata);
+    if (isSameAirport) {
+        // Unselect the airport
+        selectedAirport = null;
+        globe.arcsData([]); // Clear routes
+    } else {
+        // Select the new airport
+        selectedAirport = airport;
 
-        if (!src || !dst) return null;
+        console.log("Clicked airport:", airport);
 
-        return {
-            startLat: parseFloat(src.lat),
-            startLng: parseFloat(src.lng),
-            endLat: parseFloat(dst.lat),
-            endLng: parseFloat(dst.lng),
-            ...r
-        };
-    }).filter(r => r !== null);
+        // Find routes starting from this airport
+        const activeRoutes = ROUTES.filter(r => r.srcIata === airport.iata).map(r => {
+            const src = AIRPORTS.find(a => a.iata === r.srcIata);
+            const dst = AIRPORTS.find(a => a.iata === r.dstIata);
 
-    console.log("Found routes:", activeRoutes);
+            if (!src || !dst) return null;
 
-    // Update Globe Arcs
-    globe.arcsData(activeRoutes);
+            return {
+                startLat: parseFloat(src.lat),
+                startLng: parseFloat(src.lng),
+                endLat: parseFloat(dst.lat),
+                endLng: parseFloat(dst.lng),
+                ...r
+            };
+        }).filter(r => r !== null);
 
-    // Optional: Focus camera
-    globe.pointOfView({ lat: parseFloat(airport.lat), lng: parseFloat(airport.lng), altitude: 1.5 }, 1000);
+        console.log("Found routes:", activeRoutes);
+
+        // Update Globe Arcs
+        globe.arcsData(activeRoutes);
+
+        // Optional: Focus camera
+        globe.pointOfView({ lat: parseFloat(airport.lat), lng: parseFloat(airport.lng), altitude: 1.5 }, 1000);
+    }
+
+    // Trigger points redraw to update both colors and sizes
+    // Calling pointsData with the existing array forces a redraw and re-evaluation of pointColor and pointRadius
+    globe.pointsData(AIRPORTS);
 }
 
 // Data Loading
