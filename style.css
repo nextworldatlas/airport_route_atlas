@@ -4,7 +4,6 @@ body {
     overflow: hidden;
     font-family: 'Inter', sans-serif;
     background-color: #000;
-    /* Fallback */
 }
 
 #globeViz {
@@ -18,47 +17,6 @@ body {
     left: 20px;
     color: white;
     pointer-events: none;
-    /* Let clicks pass through to the globe */
-    background: rgba(0, 0, 0, 0.6);
-    padding: 20px;
-    border-radius: 12px;
-    backdrop-filter: blur(5px);
-    max-width: 300px;
-}
-
-#ui-layer h1 {
-    margin: 0 0 10px 0;
-    font-size: 1.5rem;
-    font-weight: 600;
-}
-
-#ui-layer p {
-    margin: 0;
-    font-size: 0.9rem;
-    opacity: 0.8;
-}
-
-body {
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-    font-family: 'Inter', sans-serif;
-    background-color: #000;
-    /* Fallback */
-}
-
-#globeViz {
-    width: 100vw;
-    height: 100vh;
-}
-
-#ui-layer {
-    position: absolute;
-    top: 20px;
-    left: 20px;
-    color: white;
-    pointer-events: none;
-    /* Let clicks pass through to the globe */
     background: rgba(0, 0, 0, 0.6);
     padding: 20px;
     border-radius: 12px;
@@ -91,7 +49,6 @@ body {
     gap: 10px;
     pointer-events: auto;
     align-items: flex-start;
-    /* Align items to top */
 }
 
 #search-wrapper {
@@ -158,7 +115,6 @@ body {
     overflow-y: auto;
     z-index: 1000;
     display: none;
-    /* Hidden by default */
 }
 
 .suggestion-item {

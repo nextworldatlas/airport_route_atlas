@@ -29,7 +29,7 @@ let HTML_LABEL_AIRPORTS = [];      // airports that get HTML labels
 
 // Try to find a numeric seat-count field on the row
 function getSeatValue(a) {
-    const candidates = ['seats', 'Seats', 'total_seats', 'TotalSeats', 'SEATS'];
+    const candidates = ['flights', 'Flights'];
     for (const key of candidates) {
         if (a[key] !== undefined && a[key] !== null && !isNaN(+a[key])) {
             return +a[key];
@@ -39,12 +39,12 @@ function getSeatValue(a) {
 }
 
 // Pick the largest airports by seat count (for full-world labels)
-function getTopAirportsBySeats(airports, maxCount) {
+function getTopAirportsByFlights(airports, maxCount) {
     if (!airports.length) return [];
 
-    const withSeats = [...airports];
-    withSeats.sort((a, b) => getSeatValue(b) - getSeatValue(a)); // descending
-    return withSeats.slice(0, maxCount);
+    const withFlights = [...airports];
+    withFlights.sort((a, b) => getSeatValue(b) - getSeatValue(a)); // descending
+    return withFlights.slice(0, maxCount);
 }
 
 // Safely choose an IATA-ish label
@@ -74,8 +74,10 @@ function getBaseRadius(a) {
             return 0.22;
         case 'regional':
             return 0.18;
+        case 'outpost':
+            return 0.15;
         default:
-            return 0.3;   // fallback
+            return 0.15;   // fallback
     }
 }
 
@@ -209,7 +211,7 @@ function updateVisualization() {
     globe.pointsData(VISIBLE_AIRPORTS);
 
     // Update labels based on visible set
-    HTML_LABEL_AIRPORTS = getTopAirportsBySeats(VISIBLE_AIRPORTS, WORLD_LABEL_LIMIT);
+    HTML_LABEL_AIRPORTS = getTopAirportsByFlights(VISIBLE_AIRPORTS, WORLD_LABEL_LIMIT);
     globe.htmlElementsData(HTML_LABEL_AIRPORTS);
 }
 
@@ -368,8 +370,8 @@ async function loadData() {
         VISIBLE_AIRPORTS = AIRPORTS;
         globe.pointsData(VISIBLE_AIRPORTS);
 
-        // Initial labels: top N airports by seats
-        HTML_LABEL_AIRPORTS = getTopAirportsBySeats(AIRPORTS, WORLD_LABEL_LIMIT);
+        // Initial labels: top N airports by flights
+        HTML_LABEL_AIRPORTS = getTopAirportsByFlights(AIRPORTS, WORLD_LABEL_LIMIT);
         globe.htmlElementsData(HTML_LABEL_AIRPORTS);
 
         console.log('Initial labels:', HTML_LABEL_AIRPORTS.length);
