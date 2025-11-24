@@ -9,7 +9,7 @@ const AIRPORT_COLOR = '#8ddcff';          // Unselected airport color
 const AIRPORT_SELECTED_COLOR = '#991933'; // Selected airport color
 const ROUTE_COLOR = '#ffffff';
 
-const DEFAULT_RADIUS = 0.5; // Initial / selected radius
+const DEFAULT_RADIUS = 0.3; // Initial / selected radius
 const SHRINK_RADIUS = 0.2;  // Radius for non-selected airports
 
 const WORLD_LABEL_LIMIT = 250; // Max airports with labels in full-world mode
@@ -51,6 +51,33 @@ function getTopAirportsBySeats(airports, maxCount) {
 function getIataCode(a) {
     return a.iata || a.IATA || a.code || a.Code || '';
 }
+// Read size category from CSV row: Mega, Large, Medium, Small, Regional
+function getSizeCategory(a) {
+    const candidates = ['category', 'Category', 'size', 'Size', 'class', 'Class'];
+    for (const key of candidates) {
+        if (a[key]) return a[key];
+    }
+    return 'Medium'; // fallback
+}
+
+function getBaseRadius(a) {
+    const cat = (getSizeCategory(a) || '').toLowerCase();
+
+    switch (cat) {
+        case 'mega':
+            return 0.5;   // as requested
+        case 'large':
+            return 0.4;
+        case 'medium':
+            return 0.3;
+        case 'small':
+            return 0.22;
+        case 'regional':
+            return 0.18;
+        default:
+            return 0.3;   // fallback
+    }
+}
 
 // =======================
 // Initialize Globe
@@ -66,18 +93,24 @@ const globe = Globe()
     )
 
     .pointRadius(d => {
+        const base = getBaseRadius(d);
+
         if (selectedAirport === null) {
-            // No selection yet – all same size
-            return DEFAULT_RADIUS;
+            // No selection: use size-based radius only
+            return base;
         }
-        // Selected stays default size, others shrink
-        return d === selectedAirport ? DEFAULT_RADIUS : SHRINK_RADIUS;
+
+        // When there's a selected airport:
+        // - selected airport keeps its full size
+        // - others shrink relative to their base size
+        return d === selectedAirport ? base : base * 0.5;
     })
+
 
     .pointAltitude(d => {
         if (selectedAirport === null) {
             // Initial state: all slightly raised
-            return 0.02;
+            return 0.005;
         }
         // Selected stays raised, others nearly flat
         return d === selectedAirport ? 0.02 : 0.01;
