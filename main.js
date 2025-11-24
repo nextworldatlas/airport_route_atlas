@@ -21,7 +21,18 @@ const globe = Globe()
 
     // Points (Airports)
     .pointColor(d => d === selectedAirport ? AIRPORT_SELECTED_COLOR : AIRPORT_COLOR)
-    .pointAltitude(0.02) // Slightly raised
+    .pointAltitude(d => {
+        if (selectedAirport === null) {
+            // Before selection: all airports slightly raised
+            return 0.02;
+        } else if (d === selectedAirport) {
+            // Selected airport remains raised
+            return 0.02;
+        } else {
+            // Non-selected airports become flat (0) or nearly flat (0.01)
+            return 0;
+        }
+    })
 
     // Dynamic Radius logic:
     .pointRadius(d => {
