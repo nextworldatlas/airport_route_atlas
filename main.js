@@ -184,16 +184,27 @@ globe.globeTileEngineUrl((x, y, z) =>
 // Interaction Handler
 // =======================
 
-function applyFilter(category) {
+function updateVisualization() {
     // Clear selection
     selectedAirport = null;
     globe.arcsData([]);
 
-    if (!category) {
-        VISIBLE_AIRPORTS = AIRPORTS;
-    } else {
-        VISIBLE_AIRPORTS = AIRPORTS.filter(a => getSizeCategory(a) === category);
-    }
+    const category = document.getElementById('category-filter')?.value || '';
+    const searchTerm = (document.getElementById('search-input')?.value || '').toLowerCase().trim();
+
+    VISIBLE_AIRPORTS = AIRPORTS.filter(a => {
+        // 1. Category Filter
+        if (category && getSizeCategory(a) !== category) return false;
+
+        // 2. Search Filter (IATA or Name)
+        if (searchTerm) {
+            const iata = getIataCode(a).toLowerCase();
+            const name = (a.name || '').toLowerCase();
+            if (!iata.includes(searchTerm) && !name.includes(searchTerm)) return false;
+        }
+
+        return true;
+    });
 
     globe.pointsData(VISIBLE_AIRPORTS);
 
@@ -202,17 +213,69 @@ function applyFilter(category) {
     globe.htmlElementsData(HTML_LABEL_AIRPORTS);
 }
 
+function updateSuggestions(searchTerm) {
+    const suggestionsEl = document.getElementById('search-suggestions');
+    if (!suggestionsEl) return;
+
+    // Hide if empty
+    if (!searchTerm || searchTerm.length < 2) {
+        suggestionsEl.style.display = 'none';
+        return;
+    }
+
+    // Filter matches (limit to 10)
+    const matches = AIRPORTS.filter(a => {
+        const iata = getIataCode(a).toLowerCase();
+        const name = (a.name || '').toLowerCase();
+        return iata.includes(searchTerm) || name.includes(searchTerm);
+    }).slice(0, 10);
+
+    if (matches.length === 0) {
+        suggestionsEl.style.display = 'none';
+        return;
+    }
+
+    // Generate HTML
+    suggestionsEl.innerHTML = '';
+    matches.forEach(a => {
+        const div = document.createElement('div');
+        div.className = 'suggestion-item';
+        div.innerHTML = `<span class="iata">${getIataCode(a)}</span> ${a.name}`;
+
+        div.addEventListener('click', () => {
+            // Set input value
+            const searchInput = document.getElementById('search-input');
+            if (searchInput) {
+                searchInput.value = getIataCode(a);
+            }
+            suggestionsEl.style.display = 'none';
+
+            // Trigger full selection logic
+            handleAirportClick(a);
+        });
+
+        suggestionsEl.appendChild(div);
+    });
+
+    suggestionsEl.style.display = 'block';
+}
+
 function resetView() {
     // Reset dropdown
     const select = document.getElementById('category-filter');
     if (select) select.value = '';
 
+    // Reset search
+    const search = document.getElementById('search-input');
+    if (search) search.value = '';
+
     // Apply empty filter (resets everything)
-    applyFilter('');
+    updateVisualization();
 
     // Reset camera
-    globe.pointOfView({ lat: 0, lng: 0, altitude: 2.5 }, 2000);
+    globe.pointOfView({ lat: current.lat, lng: current.lng, altitude: 1 }, 2000);
 }
+
 function handleAirportClick(airport) {
     if (!airport) return;
 
@@ -220,14 +283,19 @@ function handleAirportClick(airport) {
 
     if (isSameAirport) {
         // 🔄 Toggle off: re-apply current filter (which clears selection)
-        const currentCategory = document.getElementById('category-filter').value;
-        applyFilter(currentCategory);
+        updateVisualization();
         return;
     }
 
     // 🟥 New selection
     selectedAirport = airport;
     console.log('Clicked airport:', airport);
+
+    // Sync with search bar
+    const searchInput = document.getElementById('search-input');
+    if (searchInput) {
+        searchInput.value = getIataCode(airport);
+    }
 
     // Build outbound routes from this airport
     const activeRoutes = ROUTES
@@ -309,6 +377,9 @@ async function loadData() {
         const loadingEl = document.getElementById('loading');
         if (loadingEl) loadingEl.style.display = 'none';
 
+        // Set initial camera position
+        globe.pointOfView({ lat: 35, lng: -90, altitude: 1 }, 0);
+
         // Populate Category Dropdown
         const categories = new Set(AIRPORTS.map(a => getSizeCategory(a)));
         const sortedCategories = [...categories].sort();
@@ -320,19 +391,49 @@ async function loadData() {
                 opt.textContent = cat;
                 select.appendChild(opt);
             });
-
-            // Event Listeners
-            select.addEventListener('change', (e) => applyFilter(e.target.value));
-            document.getElementById('reset-btn').addEventListener('click', resetView);
         }
     } catch (err) {
         console.error('Error loading data:', err);
         const loadingEl = document.getElementById('loading');
-        if (loadingEl) loadingEl.textContent = 'Error loading data.';
+        if (loadingEl) {
+            loadingEl.textContent = 'Error loading data. See console.';
+            loadingEl.style.color = 'red';
+
+            if (window.location.protocol === 'file:') {
+                alert('Error: Cannot load data when opening via file://. Please run a local server (e.g., python -m http.server).');
+            }
+        }
     }
 }
 
 // =======================
 // Start
 // =======================
+
+// Attach listeners immediately
+const select = document.getElementById('category-filter');
+if (select) {
+    select.addEventListener('change', updateVisualization);
+}
+const searchInput = document.getElementById('search-input');
+if (searchInput) {
+    searchInput.addEventListener('input', (e) => {
+        updateVisualization();
+        updateSuggestions(e.target.value.toLowerCase().trim());
+    });
+
+    // Hide suggestions on focus out (delayed to allow click)
+    // Better: click outside listener
+    document.addEventListener('click', (e) => {
+        const suggestionsEl = document.getElementById('search-suggestions');
+        if (suggestionsEl && !e.target.closest('#search-wrapper')) {
+            suggestionsEl.style.display = 'none';
+        }
+    });
+}
+const resetBtn = document.getElementById('reset-btn');
+if (resetBtn) {
+    resetBtn.addEventListener('click', resetView);
+}
+
 loadData();

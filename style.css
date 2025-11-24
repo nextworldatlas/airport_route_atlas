@@ -38,6 +38,46 @@ body {
     opacity: 0.8;
 }
 
+body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    font-family: 'Inter', sans-serif;
+    background-color: #000;
+    /* Fallback */
+}
+
+#globeViz {
+    width: 100vw;
+    height: 100vh;
+}
+
+#ui-layer {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    color: white;
+    pointer-events: none;
+    /* Let clicks pass through to the globe */
+    background: rgba(0, 0, 0, 0.6);
+    padding: 20px;
+    border-radius: 12px;
+    backdrop-filter: blur(5px);
+    max-width: 300px;
+}
+
+#ui-layer h1 {
+    margin: 0 0 10px 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+#ui-layer p {
+    margin: 0;
+    font-size: 0.9rem;
+    opacity: 0.8;
+}
+
 #loading {
     margin-top: 10px;
     font-style: italic;
@@ -50,12 +90,18 @@ body {
     display: flex;
     gap: 10px;
     pointer-events: auto;
-    /* Ensure clickable */
+    align-items: flex-start;
+    /* Align items to top */
 }
 
-/* Dropdown & Button */
+#search-wrapper {
+    position: relative;
+}
+
+/* Dropdown & Button & Search */
 #category-filter,
-#reset-btn {
+#reset-btn,
+#search-input {
     background: rgba(0, 0, 0, 0.6);
     color: #fff;
     border: 1px solid rgba(255, 255, 255, 0.3);
@@ -63,23 +109,76 @@ body {
     border-radius: 4px;
     font-family: inherit;
     font-size: 14px;
-    cursor: pointer;
     backdrop-filter: blur(4px);
     transition: background 0.2s, border-color 0.2s;
 }
 
+#search-input {
+    width: 180px;
+    cursor: text;
+}
+
+#category-filter {
+    cursor: pointer;
+}
+
+#reset-btn {
+    cursor: pointer;
+}
+
 #category-filter:hover,
-#reset-btn:hover {
+#reset-btn:hover,
+#search-input:hover {
     background: rgba(0, 0, 0, 0.8);
     border-color: rgba(255, 255, 255, 0.6);
 }
 
 #category-filter:focus,
-#reset-btn:focus {
+#reset-btn:focus,
+#search-input:focus {
     outline: none;
     border-color: #8ddcff;
 }
 
 #reset-btn:active {
     background: rgba(255, 255, 255, 0.1);
+}
+
+/* Search Suggestions */
+#search-suggestions {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-top: none;
+    border-radius: 0 0 4px 4px;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1000;
+    display: none;
+    /* Hidden by default */
+}
+
+.suggestion-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #fff;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.suggestion-item:last-child {
+    border-bottom: none;
+}
+
+.suggestion-item:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.suggestion-item .iata {
+    font-weight: bold;
+    color: #8ddcff;
+    margin-right: 6px;
 }
