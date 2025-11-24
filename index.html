@@ -9,15 +9,18 @@
 
     <!-- Dependencies -->
     <script src="https://unpkg.com/globe.gl"></script>
-    <!-- We will use ES modules for the main logic, but globe.gl is loaded as a global script for simplicity with some versions, 
-         or we can import it if we use the module version. The example used a script tag. 
-         Let's stick to the script tag for globe.gl to match the example, but use modules for our logic. -->
 </head>
 
 <body>
     <div id="globeViz"></div>
     <div id="ui-layer">
         <h1>Airport Route Atlas</h1>
+        <div id="controls">
+            <select id="category-filter">
+                <option value="">All Categories</option>
+            </select>
+            <button id="reset-btn">Reset View</button>
+        </div>
         <p>Click an airport to view outbound routes.</p>
         <div id="loading">Loading flight data...</div>
     </div>

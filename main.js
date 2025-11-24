@@ -183,23 +183,45 @@ globe.globeTileEngineUrl((x, y, z) =>
 // =======================
 // Interaction Handler
 // =======================
+
+function applyFilter(category) {
+    // Clear selection
+    selectedAirport = null;
+    globe.arcsData([]);
+
+    if (!category) {
+        VISIBLE_AIRPORTS = AIRPORTS;
+    } else {
+        VISIBLE_AIRPORTS = AIRPORTS.filter(a => getSizeCategory(a) === category);
+    }
+
+    globe.pointsData(VISIBLE_AIRPORTS);
+
+    // Update labels based on visible set
+    HTML_LABEL_AIRPORTS = getTopAirportsBySeats(VISIBLE_AIRPORTS, WORLD_LABEL_LIMIT);
+    globe.htmlElementsData(HTML_LABEL_AIRPORTS);
+}
+
+function resetView() {
+    // Reset dropdown
+    const select = document.getElementById('category-filter');
+    if (select) select.value = '';
+
+    // Apply empty filter (resets everything)
+    applyFilter('');
+
+    // Reset camera
+    globe.pointOfView({ lat: 0, lng: 0, altitude: 2.5 }, 2000);
+}
 function handleAirportClick(airport) {
     if (!airport) return;
 
     const isSameAirport = airport === selectedAirport;
 
     if (isSameAirport) {
-        // 🔄 Toggle off: clear selection and routes, restore all airports and world labels
-        selectedAirport = null;
-        globe.arcsData([]);
-
-        VISIBLE_AIRPORTS = AIRPORTS;
-        HTML_LABEL_AIRPORTS = getTopAirportsBySeats(AIRPORTS, WORLD_LABEL_LIMIT);
-
-        globe.pointsData(VISIBLE_AIRPORTS);
-        globe.htmlElementsData(HTML_LABEL_AIRPORTS);
-
-        console.log('Reset to world view. Labels:', HTML_LABEL_AIRPORTS.length);
+        // 🔄 Toggle off: re-apply current filter (which clears selection)
+        const currentCategory = document.getElementById('category-filter').value;
+        applyFilter(currentCategory);
         return;
     }
 
@@ -286,6 +308,23 @@ async function loadData() {
 
         const loadingEl = document.getElementById('loading');
         if (loadingEl) loadingEl.style.display = 'none';
+
+        // Populate Category Dropdown
+        const categories = new Set(AIRPORTS.map(a => getSizeCategory(a)));
+        const sortedCategories = [...categories].sort();
+        const select = document.getElementById('category-filter');
+        if (select) {
+            sortedCategories.forEach(cat => {
+                const opt = document.createElement('option');
+                opt.value = cat;
+                opt.textContent = cat;
+                select.appendChild(opt);
+            });
+
+            // Event Listeners
+            select.addEventListener('change', (e) => applyFilter(e.target.value));
+            document.getElementById('reset-btn').addEventListener('click', resetView);
+        }
     } catch (err) {
         console.error('Error loading data:', err);
         const loadingEl = document.getElementById('loading');
