@@ -62,12 +62,12 @@ function getSizeCategory(a) {
 function getBaseRadius(a) {
     const cat = (getSizeCategory(a) || '').toLowerCase();
     const sizes = {
-        mega: 0.5,
-        large: 0.4,
-        medium: 0.3,
-        small: 0.22,
-        regional: 0.18,
-        outpost: 0.15
+        mega: 0.48,
+        large: 0.40,
+        medium: 0.33,
+        small: 0.27,
+        regional: 0.20,
+        outpost: 0.16
     };
     return sizes[cat] || 0.15;
 }
