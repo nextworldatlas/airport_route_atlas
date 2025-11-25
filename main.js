@@ -121,6 +121,7 @@ const globe = Globe()
     .arcsData([])
     .onArcHover(handleRouteHover)
     .onArcClick(handleRouteClick)
+    .onGlobeClick(handleGlobeClick)
 
     // HTML Labels
     .htmlElementsData([])
@@ -160,11 +161,92 @@ function createLabelElement(d) {
 // Interaction Handlers
 // =======================
 
-function handleRouteHover(hoverRoute) {
-    if (selectedRoute) return; // Don't interfere if a route is locked
+function updateRouteInfoPanel(route) {
+    const panel = document.getElementById('route-info-panel');
+    if (!panel) return;
 
-    globe.arcColor(d => d === hoverRoute ? CONFIG.ROUTE_HIGHLIGHT_COLOR : CONFIG.ROUTE_COLOR);
-    globe.arcStroke(d => d === hoverRoute ? 0.5 : 0.25);
+    if (!route) {
+        panel.style.display = 'none';
+        return;
+    }
+
+    document.getElementById('route-title').textContent =
+        `${route.srcIata} - ${route.dstIata}`;
+    document.getElementById('route-flights').textContent =
+        route.flights || '-';
+    document.getElementById('route-stage').textContent =
+        route.stage ? `${route.stage} mi` : '-';
+    document.getElementById('route-duration').textContent =
+        route.duration ? `${route.duration} hr` : '-';
+
+    panel.style.display = 'block';
+}
+
+function handleRouteHover(hoverRoute) {
+    // If a route is selected/locked, don't override the panel
+    if (selectedRoute) return;
+
+    if (hoverRoute) {
+        // highlight hovered route
+        globe.arcColor(d =>
+            d === hoverRoute ? CONFIG.ROUTE_HIGHLIGHT_COLOR : CONFIG.ROUTE_COLOR
+        );
+        globe.arcStroke(d => (d === hoverRoute ? 0.5 : 0.25));
+
+        // show hover info in the existing panel
+        updateRouteInfoPanel(hoverRoute);
+    } else {
+        // hover out: clear highlights & panel (if nothing selected)
+        globe.arcColor(() => CONFIG.ROUTE_COLOR);
+        globe.arcStroke(() => 0.25);
+
+        updateRouteInfoPanel(null);
+    }
+}
+
+function handleGlobeClick() {
+    // Only care if a route is currently selected
+    if (!selectedRoute) return;
+
+    selectedRoute = null;
+    updateRouteInfoPanel(null);
+
+    // If a hub is selected, rebuild its network view
+    if (selectedAirport) {
+        // Recreate the outbound routes from the selected hub
+        const activeRoutes = ROUTES
+            .filter(r => r.srcIata === selectedAirport.iata)
+            .map(r => {
+                const src = AIRPORTS.find(a => a.iata === r.srcIata);
+                const dst = AIRPORTS.find(a => a.iata === r.dstIata);
+                if (!src || !dst) return null;
+                return {
+                    startLat: parseFloat(src.lat),
+                    startLng: parseFloat(src.lng),
+                    endLat: parseFloat(dst.lat),
+                    endLng: parseFloat(dst.lng),
+                    ...r
+                };
+            })
+            .filter(Boolean);
+
+        globe.arcsData(activeRoutes);
+
+        const connectedIatas = new Set([
+            selectedAirport.iata,
+            ...activeRoutes.map(r => r.dstIata)
+        ]);
+        VISIBLE_AIRPORTS = AIRPORTS.filter(a => connectedIatas.has(a.iata));
+        globe.pointsData(VISIBLE_AIRPORTS);
+        HTML_LABEL_AIRPORTS = VISIBLE_AIRPORTS;
+        globe.htmlElementsData(HTML_LABEL_AIRPORTS);
+
+        globe.arcColor(() => CONFIG.ROUTE_COLOR);
+        globe.arcStroke(() => 0.25);
+    } else {
+        // No hub selected: fall back to full view
+        updateVisualization();
+    }
 }
 
 function updateVisualization() {
@@ -274,22 +356,18 @@ function handleRouteClick(route) {
     selectedRoute = route;
     console.log('Clicked route:', route);
 
-    // Highlight route
-    globe.arcColor(d => (d.srcIata === route.srcIata && d.dstIata === route.dstIata) ? CONFIG.ROUTE_HIGHLIGHT_COLOR : 'rgba(255, 255, 255, 0.1)');
-    globe.arcStroke(d => (d.srcIata === route.srcIata && d.dstIata === route.dstIata) ? 0.8 : 0.1);
+    // Lock highlight on the selected route
+    globe.arcColor(d =>
+        d === route ? CONFIG.ROUTE_HIGHLIGHT_COLOR : 'rgba(255, 255, 255, 0.1)'
+    );
+    globe.arcStroke(d => (d === route ? 0.8 : 0.1));
 
-    // Update Info Panel
-    const panel = document.getElementById('route-info-panel');
-    if (panel) {
-        document.getElementById('route-title').textContent = `${route.srcIata} - ${route.dstIata}`;
-        document.getElementById('route-flights').textContent = route.flights || '-';
-        document.getElementById('route-stage').textContent = route.stage ? `${route.stage} mi` : '-';
-        document.getElementById('route-duration').textContent = route.duration ? `${route.duration} hr` : '-';
-        panel.style.display = 'block';
-    }
+    // Lock panel to this route
+    updateRouteInfoPanel(route);
 
-    // Ensure visibility
+    // Ensure only this route is shown in arcsData
     globe.arcsData([route]);
+
     const src = AIRPORTS.find(a => a.iata === route.srcIata);
     const dst = AIRPORTS.find(a => a.iata === route.dstIata);
 
