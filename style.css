@@ -44,21 +44,24 @@ body {
 
 /* Controls Container */
 #controls {
-    margin: 10px 0;
+    margin: 15px 0 0 0;
     display: flex;
-    gap: 10px;
+    flex-direction: column;
+    gap: 12px;
     pointer-events: auto;
-    align-items: flex-start;
+    width: 100%;
 }
 
-#search-wrapper {
+#search-wrapper,
+#route-search-wrapper {
     position: relative;
 }
 
 /* Dropdown & Button & Search */
 #category-filter,
 #reset-btn,
-#search-input {
+#search-input,
+#route-search-input {
     background: rgba(0, 0, 0, 0.6);
     color: #fff;
     border: 1px solid rgba(255, 255, 255, 0.3);
@@ -68,10 +71,12 @@ body {
     font-size: 14px;
     backdrop-filter: blur(4px);
     transition: background 0.2s, border-color 0.2s;
+    width: 100%;
+    box-sizing: border-box;
 }
 
-#search-input {
-    width: 180px;
+#search-input,
+#route-search-input {
     cursor: text;
 }
 
@@ -85,14 +90,16 @@ body {
 
 #category-filter:hover,
 #reset-btn:hover,
-#search-input:hover {
+#search-input:hover,
+#route-search-input:hover {
     background: rgba(0, 0, 0, 0.8);
     border-color: rgba(255, 255, 255, 0.6);
 }
 
 #category-filter:focus,
 #reset-btn:focus,
-#search-input:focus {
+#search-input:focus,
+#route-search-input:focus {
     outline: none;
     border-color: #8ddcff;
 }
@@ -102,7 +109,8 @@ body {
 }
 
 /* Search Suggestions */
-#search-suggestions {
+#search-suggestions,
+#route-search-suggestions {
     position: absolute;
     top: 100%;
     left: 0;
@@ -137,4 +145,46 @@ body {
     font-weight: bold;
     color: #8ddcff;
     margin-right: 6px;
+}
+
+/* Route Info Panel */
+#route-info-panel {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 20px;
+    border-radius: 12px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    width: 250px;
+    z-index: 1000;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+#route-info-panel h2 {
+    margin: 0 0 15px 0;
+    font-size: 1.5rem;
+    color: #8ddcff;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    padding-bottom: 10px;
+    text-align: center;
+}
+
+.route-stat {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    font-size: 0.95rem;
+}
+
+.route-stat .label {
+    opacity: 0.7;
+}
+
+.route-stat .value {
+    font-weight: 600;
+    color: #fff;
 }

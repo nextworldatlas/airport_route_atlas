@@ -20,6 +20,7 @@ const WORLD_LABEL_LIMIT = 250; // Max airports with labels in full-world mode
 let AIRPORTS = [];
 let ROUTES = [];
 let selectedAirport = null;        // currently selected airport object
+let selectedRoute = null;          // currently selected route object
 let VISIBLE_AIRPORTS = [];         // airports currently rendered as points
 let HTML_LABEL_AIRPORTS = [];      // airports that get HTML labels
 
@@ -128,6 +129,18 @@ const globe = Globe()
     .arcDashAnimateTime(0)
     .arcStroke(0.25)
     .arcsData([])
+    .onArcHover(hoverRoute => {
+        if (selectedRoute) return; // Don't interfere if a route is locked
+
+        globe.arcColor(d => {
+            if (d === hoverRoute) return '#ffd700'; // Gold highlight
+            return ROUTE_COLOR;
+        });
+
+        // Optional: thicken hovered route
+        globe.arcStroke(d => d === hoverRoute ? 0.5 : 0.25);
+    })
+    .onArcClick(handleRouteClick)
 
     // =======================
     // HTML Labels (black background + glow)
@@ -148,7 +161,7 @@ const globe = Globe()
         div.textContent = code;
 
         // Base look
-        div.style.background = 'rgba(0, 0, 0, 0.8)'; // black backdrop
+        div.style.background = 'rgba(0, 0, 0, 0.5)'; // black backdrop
         div.style.color = 'white';
         div.style.padding = '2px 6px';
         div.style.borderRadius = '4px';
@@ -262,6 +275,66 @@ function updateSuggestions(searchTerm) {
     suggestionsEl.style.display = 'block';
 }
 
+function updateRouteSuggestions(searchTerm) {
+    const suggestionsEl = document.getElementById('route-search-suggestions');
+    if (!suggestionsEl) return;
+
+    // Hide if empty
+    if (!searchTerm || searchTerm.length < 3) {
+        suggestionsEl.style.display = 'none';
+        return;
+    }
+
+    // Filter matches (limit to 10)
+    // Matches "SRC-DST" format
+    const matches = ROUTES.filter(r => {
+        const routeStr = `${r.srcIata}-${r.dstIata}`.toLowerCase();
+        return routeStr.includes(searchTerm);
+    }).slice(0, 10);
+
+    if (matches.length === 0) {
+        suggestionsEl.style.display = 'none';
+        return;
+    }
+
+    // Generate HTML
+    suggestionsEl.innerHTML = '';
+    matches.forEach(r => {
+        const div = document.createElement('div');
+        div.className = 'suggestion-item';
+        div.innerHTML = `<span class="iata">${r.srcIata}-${r.dstIata}</span>`;
+
+        div.addEventListener('click', () => {
+            // Set input value
+            const searchInput = document.getElementById('route-search-input');
+            if (searchInput) {
+                searchInput.value = `${r.srcIata}-${r.dstIata}`;
+            }
+            suggestionsEl.style.display = 'none';
+
+            // Trigger full selection logic
+            // We need to construct the full route object with coords
+            const src = AIRPORTS.find(a => a.iata === r.srcIata);
+            const dst = AIRPORTS.find(a => a.iata === r.dstIata);
+
+            if (src && dst) {
+                const fullRoute = {
+                    startLat: parseFloat(src.lat),
+                    startLng: parseFloat(src.lng),
+                    endLat: parseFloat(dst.lat),
+                    endLng: parseFloat(dst.lng),
+                    ...r
+                };
+                handleRouteClick(fullRoute);
+            }
+        });
+
+        suggestionsEl.appendChild(div);
+    });
+
+    suggestionsEl.style.display = 'block';
+}
+
 function resetView() {
     // Reset dropdown
     const select = document.getElementById('category-filter');
@@ -275,7 +348,75 @@ function resetView() {
     updateVisualization();
 
     // Reset camera
-    globe.pointOfView({ lat: current.lat, lng: current.lng, altitude: 1 }, 2000);
+    globe.pointOfView(
+        {
+            lat: Number(route.startLat),
+            lng: Number(route.startLng),
+            altitude: 0.5
+        },
+        2000
+    );
+
+    // Reset Route Info
+    selectedRoute = null;
+    const routeInfo = document.getElementById('route-info-panel');
+    if (routeInfo) routeInfo.style.display = 'none';
+
+    // Clear route search
+    const routeSearch = document.getElementById('route-search-input');
+    if (routeSearch) routeSearch.value = '';
+}
+
+function handleRouteClick(route) {
+    if (!route) return;
+
+    selectedRoute = route;
+    console.log('Clicked route:', route);
+
+    // Highlight this route permanently (until reset/click elsewhere)
+    globe.arcColor(d => {
+        // Match by src/dst to be safe
+        if (d.srcIata === route.srcIata && d.dstIata === route.dstIata) return '#ffd700';
+        return 'rgba(255, 255, 255, 0.1)'; // Dim others
+    });
+    globe.arcStroke(d => {
+        if (d.srcIata === route.srcIata && d.dstIata === route.dstIata) return 0.8;
+        return 0.1;
+    });
+
+    // Show Info Panel
+    const panel = document.getElementById('route-info-panel');
+    if (panel) {
+        document.getElementById('route-title').textContent = `${route.srcIata} - ${route.dstIata}`;
+        document.getElementById('route-flights').textContent = route.flights || '-';
+        document.getElementById('route-stage').textContent = route.stage ? `${route.stage} mi` : '-';
+        document.getElementById('route-duration').textContent = route.duration ? `${route.duration} hr` : '-';
+
+        panel.style.display = 'block';
+    }
+
+    // Ensure the route is visible on the map
+    globe.arcsData([route]);
+
+    // Also ensure source/dest airports are visible
+    const src = AIRPORTS.find(a => a.iata === route.srcIata);
+    const dst = AIRPORTS.find(a => a.iata === route.dstIata);
+    if (src && dst) {
+        VISIBLE_AIRPORTS = [src, dst];
+        globe.pointsData(VISIBLE_AIRPORTS);
+
+        // Update labels
+        HTML_LABEL_AIRPORTS = VISIBLE_AIRPORTS;
+        globe.htmlElementsData(HTML_LABEL_AIRPORTS);
+    }
+
+    // Focus camera on midpoint? Or just let user explore.
+    // Let's focus on the source airport for context
+    globe.pointOfView({
+        lat: route.startLat,
+        lng: route.startLng,
+        altitude: 0.5
+    }, 1000);
 }
 
 function handleAirportClick(airport) {
@@ -322,6 +463,11 @@ function handleAirportClick(airport) {
     // Update arcs on globe
     globe.arcsData(activeRoutes);
 
+    // Reset any previous route selection when clicking a new airport
+    selectedRoute = null;
+    const routeInfo = document.getElementById('route-info-panel');
+    if (routeInfo) routeInfo.style.display = 'none';
+
     // Compute which airports have a route "touching" the selected airport
     const connectedIatas = new Set();
     connectedIatas.add(airport.iata);
@@ -362,7 +508,16 @@ async function loadData() {
         ]);
 
         AIRPORTS = csvParse(airportsText);
-        ROUTES = csvParse(routesText);
+        const rawRoutes = csvParse(routesText);
+
+        // Clean up route keys (trim whitespace from headers)
+        ROUTES = rawRoutes.map(r => {
+            const newR = {};
+            Object.keys(r).forEach(k => {
+                newR[k.trim()] = r[k];
+            });
+            return newR;
+        });
 
         console.log(`Loaded ${AIRPORTS.length} airports and ${ROUTES.length} routes.`);
 
@@ -429,6 +584,20 @@ if (searchInput) {
     document.addEventListener('click', (e) => {
         const suggestionsEl = document.getElementById('search-suggestions');
         if (suggestionsEl && !e.target.closest('#search-wrapper')) {
+            suggestionsEl.style.display = 'none';
+        }
+    });
+}
+
+const routeSearchInput = document.getElementById('route-search-input');
+if (routeSearchInput) {
+    routeSearchInput.addEventListener('input', (e) => {
+        updateRouteSuggestions(e.target.value.toLowerCase().trim());
+    });
+
+    document.addEventListener('click', (e) => {
+        const suggestionsEl = document.getElementById('route-search-suggestions');
+        if (suggestionsEl && !e.target.closest('#route-search-wrapper')) {
             suggestionsEl.style.display = 'none';
         }
     });

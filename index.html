@@ -20,6 +20,28 @@
     <!-- Dependencies -->
     <script src="https://unpkg.com/globe.gl"></script>
 </head>
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Airport Route Atlas</title>
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-K78VEPW3N3"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+
+        gtag('config', 'G-K78VEPW3N3');
+    </script>
+
+    <!-- Dependencies -->
+    <script src="https://unpkg.com/globe.gl"></script>
+</head>
 
 <body>
     <div id="globeViz"></div>
@@ -30,6 +52,10 @@
                 <input type="text" id="search-input" placeholder="Search IATA or Name...">
                 <div id="search-suggestions"></div>
             </div>
+            <div id="route-search-wrapper">
+                <input type="text" id="route-search-input" placeholder="Search Route (e.g. LHR-JFK)...">
+                <div id="route-search-suggestions"></div>
+            </div>
             <select id="category-filter">
                 <option value="">All Categories</option>
             </select>
@@ -37,6 +63,22 @@
         </div>
         <p>Click an airport to view outbound routes.</p>
         <div id="loading">Loading flight data...</div>
+    </div>
+
+    <div id="route-info-panel" style="display: none;">
+        <h2 id="route-title">SRC - DST</h2>
+        <div class="route-stat">
+            <span class="label">Daily Flights</span>
+            <span class="value" id="route-flights">-</span>
+        </div>
+        <div class="route-stat">
+            <span class="label">Distance</span>
+            <span class="value" id="route-stage">-</span>
+        </div>
+        <div class="route-stat">
+            <span class="label">Duration</span>
+            <span class="value" id="route-duration">-</span>
+        </div>
     </div>
 
     <script type="module" src="main.js"></script>
