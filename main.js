@@ -12,7 +12,8 @@ const CONFIG = {
     DEFAULT_RADIUS: 0.3,
     SHRINK_RADIUS: 0.2,
     WORLD_LABEL_LIMIT: 250,
-    SATELLITE_TILES: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+    SATELLITE_TILES: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    CATEGORY_ORDER: ['Mega', 'Large', 'Medium', 'Small', 'Regional', 'Outpost']
 };
 
 // =======================
@@ -90,8 +91,9 @@ const globe = Globe()
         return d === selectedAirport ? base : base * 0.5;
     })
     .pointAltitude(d => {
-        if (!selectedAirport) return 0.005;
-        return d === selectedAirport ? 0.02 : 0.01;
+        const base = getBaseRadius(d);
+        const altitude = base * 0.05; // Proportional to radius
+        return d === selectedAirport ? altitude * 1.5 : altitude;
     })
     .pointLabel(d => `<b>${d.name} (${getIataCode(d)})</b><br>${d.country}`)
     .onPointClick(handleAirportClick)
@@ -110,7 +112,12 @@ const globe = Globe()
     .htmlElementsData([])
     .htmlLat(d => +d.lat)
     .htmlLng(d => +d.lng)
-    .htmlAltitude(d => (selectedAirport && d === selectedAirport) ? 0.04 : 0.03)
+    .htmlAltitude(d => {
+        const base = getBaseRadius(d);
+        const altitude = base * 0.05;
+        const finalAlt = d === selectedAirport ? altitude * 1.5 : altitude;
+        return finalAlt + 0.005; // Just above the marker
+    })
     .htmlElement(createLabelElement);
 
 function createLabelElement(d) {
@@ -367,7 +374,14 @@ async function loadData() {
         const categories = new Set(AIRPORTS.map(a => getSizeCategory(a)));
         const select = document.getElementById('category-filter');
         if (select) {
-            [...categories].sort().forEach(cat => {
+            const sortedCategories = [...categories].sort((a, b) => {
+                const idxA = CONFIG.CATEGORY_ORDER.indexOf(a);
+                const idxB = CONFIG.CATEGORY_ORDER.indexOf(b);
+                // If not found in order list, put at the end
+                return (idxA === -1 ? 999 : idxA) - (idxB === -1 ? 999 : idxB);
+            });
+
+            sortedCategories.forEach(cat => {
                 const opt = document.createElement('option');
                 opt.value = cat;
                 opt.textContent = cat;
