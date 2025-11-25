@@ -22,6 +22,8 @@ body {
     border-radius: 12px;
     backdrop-filter: blur(5px);
     max-width: 300px;
+    z-index: 1000;
+    /* Ensure it's above map labels */
 }
 
 #ui-layer h1 {
@@ -187,4 +189,78 @@ body {
 .route-stat .value {
     font-weight: 600;
     color: #fff;
+}
+
+/* UI Toggle Button */
+#ui-toggle-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    /* Position inside the panel */
+    width: 32px;
+    height: 32px;
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(5px);
+    transition: background 0.2s;
+    z-index: 1001;
+    pointer-events: auto;
+    /* Ensure it's clickable */
+}
+
+#ui-toggle-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* UI Layer Transitions */
+#ui-layer {
+    transition: transform 0.3s ease;
+    transform: translateX(0);
+    /* Default visible on desktop */
+}
+
+#ui-layer.nav-toggle {
+    transform: translateX(-100%);
+    /* Hidden when toggled on desktop */
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+    #ui-layer {
+        top: 0;
+        left: 0;
+        bottom: 0;
+        width: 80%;
+        max-width: 300px;
+        border-radius: 0;
+        height: 100vh;
+        box-sizing: border-box;
+        transform: translateX(-100%);
+        /* Default hidden on mobile */
+    }
+
+    #ui-layer.nav-toggle {
+        transform: translateX(0);
+        /* Visible when toggled on mobile */
+    }
+
+    #ui-toggle-btn {
+        /* Keep it inside the panel on mobile too */
+        right: 10px;
+        top: 10px;
+    }
+
+    #route-info-panel {
+        top: auto;
+        bottom: 20px;
+        left: 20px;
+        right: 20px;
+        width: auto;
+    }
 }

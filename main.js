@@ -4,7 +4,7 @@ import { csvParse } from 'https://esm.sh/d3-dsv';
 // Configuration
 // =======================
 const CONFIG = {
-    OPACITY: 0.4,
+    OPACITY: 0.3, // Decreased by 0.1
     AIRPORT_COLOR: '#8ddcff',
     AIRPORT_SELECTED_COLOR: '#991933',
     ROUTE_COLOR: '#ffffff',
@@ -62,7 +62,7 @@ function getSizeCategory(a) {
 function getBaseRadius(a) {
     const cat = (getSizeCategory(a) || '').toLowerCase();
     const sizes = {
-        mega: 0.48,
+        mega: 0.55,
         large: 0.40,
         medium: 0.33,
         small: 0.27,
@@ -70,6 +70,20 @@ function getBaseRadius(a) {
         outpost: 0.16
     };
     return sizes[cat] || 0.15;
+}
+
+function getNetworkAltitudeFromMaxStage(maxStageMiles) {
+    // sensible bounds for commercial routes
+    const MIN_STAGE = 200;   // anything shorter treated as "very short"
+    const MAX_STAGE = 6000;  // ultra-long haul cap
+
+    const minAlt = 0.3;      // closest zoom
+    const maxAlt = 1.1;      // farthest zoom
+
+    const s = Math.max(MIN_STAGE, Math.min(MAX_STAGE, maxStageMiles || MIN_STAGE));
+    const t = (s - MIN_STAGE) / (MAX_STAGE - MIN_STAGE); // 0 → 1
+
+    return minAlt + t * (maxAlt - minAlt);
 }
 
 // =======================
@@ -92,7 +106,7 @@ const globe = Globe()
     })
     .pointAltitude(d => {
         const base = getBaseRadius(d);
-        const altitude = base * 0.05; // Proportional to radius
+        const altitude = base * 0.02; // Proportional to radius
         return d === selectedAirport ? altitude * 1.5 : altitude;
     })
     .pointLabel(d => `<b>${d.name} (${getIataCode(d)})</b><br>${d.country}`)
@@ -116,7 +130,7 @@ const globe = Globe()
         const base = getBaseRadius(d);
         const altitude = base * 0.05;
         const finalAlt = d === selectedAirport ? altitude * 1.5 : altitude;
-        return finalAlt + 0.005; // Just above the marker
+        return finalAlt; // Same height as airport base
     })
     .htmlElement(createLabelElement);
 
@@ -286,7 +300,8 @@ function handleRouteClick(route) {
         globe.htmlElementsData(HTML_LABEL_AIRPORTS);
     }
 
-    globe.pointOfView({ lat: route.startLat, lng: route.startLng, altitude: 0.5 }, 1000);
+    const routeAltitude = getNetworkAltitudeFromMaxStage(parseFloat(route.stage));
+    globe.pointOfView({ lat: route.startLat, lng: route.startLng, altitude: routeAltitude }, 1000);
 }
 
 function handleAirportClick(airport) {
@@ -335,7 +350,19 @@ function handleAirportClick(airport) {
     HTML_LABEL_AIRPORTS = VISIBLE_AIRPORTS;
     globe.htmlElementsData(HTML_LABEL_AIRPORTS);
 
-    globe.pointOfView({ lat: parseFloat(airport.lat), lng: parseFloat(airport.lng), altitude: 1.5 }, 1000);
+    // NEW: compute max stage (distance) for this airport's network
+    const maxStage = activeRoutes.reduce((max, r) => {
+        const v = parseFloat(r.stage);
+        return !isNaN(v) ? Math.max(max, v) : max;
+    }, 0);
+
+    const networkAltitude = getNetworkAltitudeFromMaxStage(maxStage);
+
+    globe.pointOfView({
+        lat: parseFloat(airport.lat),
+        lng: parseFloat(airport.lng),
+        altitude: networkAltitude
+    }, 1000);
 }
 
 // =======================
@@ -429,5 +456,42 @@ document.addEventListener('click', (e) => {
         if (el) el.style.display = 'none';
     }
 });
+
+// UI Toggle Logic
+const uiToggleBtn = document.getElementById('ui-toggle-btn');
+const uiLayer = document.getElementById('ui-layer');
+
+function updateButtonIcon() {
+    if (!uiToggleBtn || !uiLayer) return;
+
+    const isMobile = window.innerWidth <= 768;
+    const hasClass = uiLayer.classList.contains('nav-toggle');
+
+    // Determine visibility based on state and screen size
+    // Desktop: Visible by default (no class), Hidden if class present
+    // Mobile: Hidden by default (no class), Visible if class present
+    let isVisible;
+    if (isMobile) {
+        isVisible = hasClass;
+    } else {
+        isVisible = !hasClass;
+    }
+
+    uiToggleBtn.textContent = isVisible ? '◀' : '▶';
+    uiToggleBtn.setAttribute('aria-label', isVisible ? 'Hide UI' : 'Show UI');
+}
+
+if (uiToggleBtn && uiLayer) {
+    uiToggleBtn.addEventListener('click', () => {
+        uiLayer.classList.toggle('nav-toggle');
+        updateButtonIcon();
+    });
+
+    // Initial update
+    updateButtonIcon();
+
+    // Update on resize
+    window.addEventListener('resize', updateButtonIcon);
+}
 
 loadData();
