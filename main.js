@@ -13,7 +13,7 @@ const CONFIG = {
     SHRINK_RADIUS: 0.2,
     WORLD_LABEL_LIMIT: 500,
     SATELLITE_TILES: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    CATEGORY_ORDER: ['Mega', 'Large', 'Medium', 'Small', 'Regional', 'Outpost']
+    CATEGORY_ORDER: ['Large', 'Medium', 'Small']
 };
 
 // =======================
@@ -61,16 +61,26 @@ function getSizeCategory(a) {
 }
 
 function getBaseRadius(a) {
-    const cat = (getSizeCategory(a) || '').toLowerCase();
-    const sizes = {
-        mega: 0.55,
-        large: 0.40,
-        medium: 0.33,
-        small: 0.27,
-        regional: 0.20,
-        outpost: 0.16
-    };
-    return sizes[cat] || 0.15;
+    const flights = getSeatValue(a);
+    if (flights === 0) return 0.2;
+
+    // Logarithmic scaling for better visual distribution
+    // Map flight numbers to radius range [0.2, 0.7]
+    const minFlights = 10;
+    const maxFlights = 1200;
+    const minRadius = 0.2;
+    const maxRadius = 0.7;
+
+    // Clamp flights to range
+    const clampedFlights = Math.max(minFlights, Math.min(maxFlights, flights));
+
+    // Logarithmic scale
+    const logMin = Math.log(minFlights);
+    const logMax = Math.log(maxFlights);
+    const logFlights = Math.log(clampedFlights);
+
+    const t = (logFlights - logMin) / (logMax - logMin);
+    return minRadius + t * (maxRadius - minRadius);
 }
 
 function isMobile() {
@@ -163,7 +173,9 @@ const globe = Globe()
     })
     .pointAltitude(d => {
         const base = getBaseRadius(d);
-        const altitude = base * 0.02; // Proportional to radius
+        // Small airports (small radius) get very low altitude
+        // Use exponential growth: smaller airports stay flatter
+        const altitude = Math.pow(base / 0.7, 2) * 0.04;
         return d === selectedAirport ? altitude * 1.5 : altitude;
     })
     .pointLabel(d => `<b>${d.name} (${getIataCode(d)})</b><br>${d.country}`)
@@ -187,9 +199,9 @@ const globe = Globe()
     .htmlLng(d => +d.lng)
     .htmlAltitude(d => {
         const base = getBaseRadius(d);
-        const altitude = base * 0.05;
-        const finalAlt = d === selectedAirport ? altitude * 1.5 : altitude;
-        return finalAlt; // Same height as airport base
+        // Match the airport base altitude exactly
+        const altitude = Math.pow(base / 0.7, 2) * 0.04;
+        return d === selectedAirport ? altitude * 1.5 : altitude;
     })
     .htmlElement(createLabelElement);
 
