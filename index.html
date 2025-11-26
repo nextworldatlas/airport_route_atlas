@@ -46,7 +46,17 @@
     </div>
 
     <div id="route-info-panel" style="display: none;">
-        <h2 id="route-title">SRC - DST</h2>
+        <div id="route-header">
+            <div class="route-airport" id="route-src">
+                <div class="route-iata">SRC</div>
+                <div class="route-desc">City, Country</div>
+            </div>
+            <div class="route-separator">-</div>
+            <div class="route-airport" id="route-dst">
+                <div class="route-iata">DST</div>
+                <div class="route-desc">City, Country</div>
+            </div>
+        </div>
         <div class="route-stat">
             <span class="label">Daily Flights</span>
             <span class="value" id="route-flights">-</span>

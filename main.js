@@ -228,8 +228,28 @@ function updateRouteInfoPanel(route) {
         return;
     }
 
-    document.getElementById('route-title').textContent =
-        `${route.srcIata} - ${route.dstIata}`;
+    // Find source and dest airport objects
+    const src = AIRPORTS.find(a => a.iata === route.srcIata);
+    const dst = AIRPORTS.find(a => a.iata === route.dstIata);
+
+    // Populate Source
+    const srcEl = document.getElementById('route-src');
+    if (srcEl) {
+        srcEl.querySelector('.route-iata').textContent = route.srcIata;
+        const city = src ? (src.name || '').split(',')[0] : '';
+        const country = src ? src.country : '';
+        srcEl.querySelector('.route-desc').textContent = `${city}, ${country}`;
+    }
+
+    // Populate Dest
+    const dstEl = document.getElementById('route-dst');
+    if (dstEl) {
+        dstEl.querySelector('.route-iata').textContent = route.dstIata;
+        const city = dst ? (dst.name || '').split(',')[0] : '';
+        const country = dst ? dst.country : '';
+        dstEl.querySelector('.route-desc').textContent = `${city}, ${country}`;
+    }
+
     document.getElementById('route-flights').textContent =
         route.flights || '-';
     document.getElementById('route-stage').textContent =
