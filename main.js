@@ -25,6 +25,7 @@ let selectedAirport = null;
 let selectedRoute = null;
 let VISIBLE_AIRPORTS = [];
 let HTML_LABEL_AIRPORTS = [];
+let currentBaseStroke = 0.25;
 
 // =======================
 // Helpers
@@ -72,13 +73,49 @@ function getBaseRadius(a) {
     return sizes[cat] || 0.15;
 }
 
+function isMobile() {
+    return window.innerWidth <= 768;
+}
+
+function getDistance(lat1, lng1, lat2, lng2) {
+    const R = 6371; // Radius of the earth in km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c; // Distance in km
+}
+
+function getSpacedAirports(airports, minDistanceKm) {
+    // 1. Sort by importance (flights)
+    const sorted = [...airports].sort((a, b) => getSeatValue(b) - getSeatValue(a));
+
+    const accepted = [];
+    for (const airport of sorted) {
+        let tooClose = false;
+        for (const existing of accepted) {
+            if (getDistance(airport.lat, airport.lng, existing.lat, existing.lng) < minDistanceKm) {
+                tooClose = true;
+                break;
+            }
+        }
+        if (!tooClose) {
+            accepted.push(airport);
+        }
+    }
+    return accepted;
+}
+
 function getNetworkAltitudeFromMaxStage(maxStageMiles) {
     // sensible bounds for commercial routes
     const MIN_STAGE = 200;   // anything shorter treated as "very short"
     const MAX_STAGE = 6000;  // ultra-long haul cap
 
-    const minAlt = 0.3;      // closest zoom
-    const maxAlt = 1.1;      // farthest zoom
+    const minAlt = 0.6;      // closest zoom
+    const maxAlt = 1.7;      // farthest zoom
 
     const s = Math.max(MIN_STAGE, Math.min(MAX_STAGE, maxStageMiles || MIN_STAGE));
     const t = (s - MIN_STAGE) / (MAX_STAGE - MIN_STAGE); // 0 → 1
@@ -191,14 +228,14 @@ function handleRouteHover(hoverRoute) {
         globe.arcColor(d =>
             d === hoverRoute ? CONFIG.ROUTE_HIGHLIGHT_COLOR : CONFIG.ROUTE_COLOR
         );
-        globe.arcStroke(d => (d === hoverRoute ? 0.5 : 0.25));
+        globe.arcStroke(d => (d === hoverRoute ? 0.5 : currentBaseStroke));
 
         // show hover info in the existing panel
         updateRouteInfoPanel(hoverRoute);
     } else {
         // hover out: clear highlights & panel (if nothing selected)
         globe.arcColor(() => CONFIG.ROUTE_COLOR);
-        globe.arcStroke(() => 0.25);
+        globe.arcStroke(() => currentBaseStroke);
 
         updateRouteInfoPanel(null);
     }
@@ -232,6 +269,10 @@ function handleGlobeClick() {
 
         globe.arcsData(activeRoutes);
 
+        // Restore stroke based on count
+        currentBaseStroke = activeRoutes.length > 50 ? 0.1 : 0.25;
+        globe.arcStroke(currentBaseStroke);
+
         const connectedIatas = new Set([
             selectedAirport.iata,
             ...activeRoutes.map(r => r.dstIata)
@@ -242,7 +283,6 @@ function handleGlobeClick() {
         globe.htmlElementsData(HTML_LABEL_AIRPORTS);
 
         globe.arcColor(() => CONFIG.ROUTE_COLOR);
-        globe.arcStroke(() => 0.25);
     } else {
         // No hub selected: fall back to full view
         updateVisualization();
@@ -252,6 +292,10 @@ function handleGlobeClick() {
 function updateVisualization() {
     selectedAirport = null;
     globe.arcsData([]);
+
+    // Reset stroke for global view (no routes usually, but good practice)
+    currentBaseStroke = 0.25;
+    globe.arcStroke(currentBaseStroke);
 
     const category = document.getElementById('category-filter')?.value || '';
     const searchTerm = (document.getElementById('search-input')?.value || '').toLowerCase().trim();
@@ -267,7 +311,12 @@ function updateVisualization() {
     });
 
     globe.pointsData(VISIBLE_AIRPORTS);
-    HTML_LABEL_AIRPORTS = getTopAirportsByFlights(VISIBLE_AIRPORTS, CONFIG.WORLD_LABEL_LIMIT);
+
+    // Spatial Decluttering
+    // Mobile: ~500km spacing, Desktop: ~150km spacing
+    const spacing = isMobile() ? 500 : 150;
+    HTML_LABEL_AIRPORTS = getSpacedAirports(VISIBLE_AIRPORTS, spacing).slice(0, CONFIG.WORLD_LABEL_LIMIT);
+
     globe.htmlElementsData(HTML_LABEL_AIRPORTS);
 }
 
@@ -416,6 +465,10 @@ function handleAirportClick(airport) {
     console.log('Found routes:', activeRoutes.length);
     globe.arcsData(activeRoutes);
 
+    // Dynamic Route Thickness
+    currentBaseStroke = activeRoutes.length > 50 ? 0.1 : 0.25;
+    globe.arcStroke(currentBaseStroke);
+
     // Reset route selection
     selectedRoute = null;
     const routeInfo = document.getElementById('route-info-panel');
@@ -435,6 +488,20 @@ function handleAirportClick(airport) {
     }, 0);
 
     const networkAltitude = getNetworkAltitudeFromMaxStage(maxStage);
+
+    // Dynamic Spacing for Route View
+    // Scale spacing based on altitude: lower altitude (zoomed in) = smaller spacing allowed
+    const baseSpacing = isMobile() ? 500 : 150;
+    const dynamicSpacing = baseSpacing * (networkAltitude / 1.5); // 1.5 is roughly the "global" altitude reference
+
+    // Apply spacing, but ALWAYS include the selected airport
+    // We filter the REST of the airports, then add selectedAirport back if missing
+    const otherAirports = VISIBLE_AIRPORTS.filter(a => a !== selectedAirport);
+    const spacedOthers = getSpacedAirports(otherAirports, dynamicSpacing);
+
+    // Ensure selectedAirport is at the front
+    HTML_LABEL_AIRPORTS = [selectedAirport, ...spacedOthers];
+    globe.htmlElementsData(HTML_LABEL_AIRPORTS);
 
     globe.pointOfView({
         lat: parseFloat(airport.lat),
@@ -467,7 +534,10 @@ async function loadData() {
 
         VISIBLE_AIRPORTS = AIRPORTS;
         globe.pointsData(VISIBLE_AIRPORTS);
-        HTML_LABEL_AIRPORTS = getTopAirportsByFlights(AIRPORTS, CONFIG.WORLD_LABEL_LIMIT);
+
+        // Spatial Decluttering for initial load
+        const spacing = isMobile() ? 500 : 150;
+        HTML_LABEL_AIRPORTS = getSpacedAirports(AIRPORTS, spacing).slice(0, CONFIG.WORLD_LABEL_LIMIT);
         globe.htmlElementsData(HTML_LABEL_AIRPORTS);
 
         const loadingEl = document.getElementById('loading');
@@ -542,14 +612,14 @@ const uiLayer = document.getElementById('ui-layer');
 function updateButtonIcon() {
     if (!uiToggleBtn || !uiLayer) return;
 
-    const isMobile = window.innerWidth <= 768;
+    const mobile = isMobile();
     const hasClass = uiLayer.classList.contains('nav-toggle');
 
     // Determine visibility based on state and screen size
     // Desktop: Visible by default (no class), Hidden if class present
     // Mobile: Hidden by default (no class), Visible if class present
     let isVisible;
-    if (isMobile) {
+    if (mobile) {
         isVisible = hasClass;
     } else {
         isVisible = !hasClass;
