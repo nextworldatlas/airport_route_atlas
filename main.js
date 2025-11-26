@@ -8,7 +8,7 @@ const CONFIG = {
     AIRPORT_SELECTED_COLOR: '#991933',
     ROUTE_COLOR: '#ffffff',
     ROUTE_HIGHLIGHT_COLOR: '#ffd700',
-    WORLD_LABEL_LIMIT: 500,
+    MAX_LABELS: 50,
     SATELLITE_TILES: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
     CATEGORY_ORDER: ['Large', 'Medium', 'Small']
 };
@@ -85,6 +85,33 @@ function getDistance(lat1, lng1, lat2, lng2) {
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
 }
+
+function getVisibleAirportsInViewport(airports) {
+    // Get current point of view from globe
+    const pov = globe.pointOfView();
+    if (!pov) return airports;
+
+    // Approximate viewport bounds based on altitude
+    // Higher altitude = wider view
+    const altitude = pov.altitude || 2;
+    const viewportRadius = altitude * 60; // Rough approximation in degrees
+
+    return airports.filter(a => {
+        const lat = parseFloat(a.lat);
+        const lng = parseFloat(a.lng);
+        if (isNaN(lat) || isNaN(lng)) return false;
+
+        // Simple bounding box check
+        const latDiff = Math.abs(lat - pov.lat);
+        const lngDiff = Math.abs(lng - pov.lng);
+
+        // Handle longitude wraparound
+        const lngDist = Math.min(lngDiff, 360 - lngDiff);
+
+        return latDiff <= viewportRadius && lngDist <= viewportRadius;
+    });
+}
+
 
 function getSpacedAirports(airports, minDistanceKm) {
     // Spatial decluttering: filter airports by minimum distance, prioritizing by flight count
@@ -358,10 +385,18 @@ function updateVisualization() {
 
     globe.pointsData(VISIBLE_AIRPORTS);
 
-    // Spatial Decluttering
-    // Mobile: ~500km spacing, Desktop: ~150km spacing
+    // Viewport-based label filtering
+    const visibleInView = getVisibleAirportsInViewport(VISIBLE_AIRPORTS);
+
+    // Sort by flight count (busiest first)
+    const sortedByImportance = [...visibleInView].sort((a, b) => getFlights(b) - getFlights(a));
+
+    // Apply spatial decluttering
     const spacing = isMobile() ? 500 : 150;
-    HTML_LABEL_AIRPORTS = getSpacedAirports(VISIBLE_AIRPORTS, spacing).slice(0, CONFIG.WORLD_LABEL_LIMIT);
+    const spacedAirports = getSpacedAirports(sortedByImportance, spacing);
+
+    // Limit to max labels
+    HTML_LABEL_AIRPORTS = spacedAirports.slice(0, CONFIG.MAX_LABELS);
 
     globe.htmlElementsData(HTML_LABEL_AIRPORTS);
 }
@@ -581,9 +616,12 @@ async function loadData() {
         VISIBLE_AIRPORTS = AIRPORTS;
         globe.pointsData(VISIBLE_AIRPORTS);
 
-        // Spatial Decluttering for initial load
+        // Viewport-based label filtering for initial load
+        const visibleInView = getVisibleAirportsInViewport(AIRPORTS);
+        const sortedByImportance = [...visibleInView].sort((a, b) => getFlights(b) - getFlights(a));
         const spacing = isMobile() ? 500 : 150;
-        HTML_LABEL_AIRPORTS = getSpacedAirports(AIRPORTS, spacing).slice(0, CONFIG.WORLD_LABEL_LIMIT);
+        const spacedAirports = getSpacedAirports(sortedByImportance, spacing);
+        HTML_LABEL_AIRPORTS = spacedAirports.slice(0, CONFIG.MAX_LABELS);
         globe.htmlElementsData(HTML_LABEL_AIRPORTS);
 
         const loadingEl = document.getElementById('loading');
@@ -688,4 +726,19 @@ if (uiToggleBtn && uiLayer) {
     window.addEventListener('resize', updateButtonIcon);
 }
 
+
+// Update labels dynamically on zoom/pan
+let labelUpdateTimeout = null;
+globe.onZoom(() => {
+    // Throttle updates to avoid excessive recalculation
+    if (labelUpdateTimeout) clearTimeout(labelUpdateTimeout);
+    labelUpdateTimeout = setTimeout(() => {
+        if (!selectedAirport) {
+            // Only update in world view, not when viewing airport routes
+            updateVisualization();
+        }
+    }, 300); // 300ms delay after user stops moving
+});
+
 loadData();
+
