@@ -4,13 +4,10 @@ import { csvParse } from 'https://esm.sh/d3-dsv';
 // Configuration
 // =======================
 const CONFIG = {
-    OPACITY: 0.3, // Decreased by 0.1
     AIRPORT_COLOR: '#8ddcff',
     AIRPORT_SELECTED_COLOR: '#991933',
     ROUTE_COLOR: '#ffffff',
     ROUTE_HIGHLIGHT_COLOR: '#ffd700',
-    DEFAULT_RADIUS: 0.3,
-    SHRINK_RADIUS: 0.2,
     WORLD_LABEL_LIMIT: 500,
     SATELLITE_TILES: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
     CATEGORY_ORDER: ['Large', 'Medium', 'Small']
@@ -31,7 +28,7 @@ let currentBaseStroke = 0.25;
 // Helpers
 // =======================
 
-function getSeatValue(a) {
+function getFlights(a) {
     const candidates = ['flights', 'Flights'];
     for (const key of candidates) {
         if (a[key] !== undefined && a[key] !== null && !isNaN(+a[key])) {
@@ -39,13 +36,6 @@ function getSeatValue(a) {
         }
     }
     return 0;
-}
-
-function getTopAirportsByFlights(airports, maxCount) {
-    if (!airports.length) return [];
-    return [...airports]
-        .sort((a, b) => getSeatValue(b) - getSeatValue(a))
-        .slice(0, maxCount);
 }
 
 function getIataCode(a) {
@@ -61,20 +51,16 @@ function getSizeCategory(a) {
 }
 
 function getBaseRadius(a) {
-    const flights = getSeatValue(a);
+    const flights = getFlights(a);
     if (flights === 0) return 0.2;
 
-    // Logarithmic scaling for better visual distribution
-    // Map flight numbers to radius range [0.2, 0.7]
+    // Logarithmic scaling: maps flight count to radius range [0.2, 0.7]
     const minFlights = 10;
     const maxFlights = 1200;
     const minRadius = 0.2;
     const maxRadius = 0.7;
 
-    // Clamp flights to range
     const clampedFlights = Math.max(minFlights, Math.min(maxFlights, flights));
-
-    // Logarithmic scale
     const logMin = Math.log(minFlights);
     const logMax = Math.log(maxFlights);
     const logFlights = Math.log(clampedFlights);
@@ -88,7 +74,8 @@ function isMobile() {
 }
 
 function getDistance(lat1, lng1, lat2, lng2) {
-    const R = 6371; // Radius of the earth in km
+    // Haversine formula for calculating distance between two points
+    const R = 6371; // Earth radius in km
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLng = (lng2 - lng1) * Math.PI / 180;
     const a =
@@ -96,12 +83,12 @@ function getDistance(lat1, lng1, lat2, lng2) {
         Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
         Math.sin(dLng / 2) * Math.sin(dLng / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c; // Distance in km
+    return R * c;
 }
 
 function getSpacedAirports(airports, minDistanceKm) {
-    // 1. Sort by importance (flights)
-    const sorted = [...airports].sort((a, b) => getSeatValue(b) - getSeatValue(a));
+    // Spatial decluttering: filter airports by minimum distance, prioritizing by flight count
+    const sorted = [...airports].sort((a, b) => getFlights(b) - getFlights(a));
 
     const accepted = [];
     for (const airport of sorted) {
@@ -120,15 +107,14 @@ function getSpacedAirports(airports, minDistanceKm) {
 }
 
 function getNetworkAltitudeFromMaxStage(maxStageMiles) {
-    // sensible bounds for commercial routes
-    const MIN_STAGE = 200;   // anything shorter treated as "very short"
-    const MAX_STAGE = 6000;  // ultra-long haul cap
-
-    const minAlt = 0.6;      // closest zoom
-    const maxAlt = 1.7;      // farthest zoom
+    // Calculate zoom altitude based on route distances
+    const MIN_STAGE = 200;  // Short routes
+    const MAX_STAGE = 6000; // Ultra-long haul
+    const minAlt = 0.6;     // Closest zoom
+    const maxAlt = 1.1;     // Farthest zoomR
 
     const s = Math.max(MIN_STAGE, Math.min(MAX_STAGE, maxStageMiles || MIN_STAGE));
-    const t = (s - MIN_STAGE) / (MAX_STAGE - MIN_STAGE); // 0 → 1
+    const t = (s - MIN_STAGE) / (MAX_STAGE - MIN_STAGE);
 
     return minAlt + t * (maxAlt - minAlt);
 }
@@ -137,19 +123,12 @@ function getRouteAltitude(route) {
     const dist = parseFloat(route.stage);
     if (isNaN(dist)) return 0.1;
 
-    // Standard scaling for shorter routes
-    // 4000 miles is roughly 6400km. Earth radius is 6371km.
-    // 0.3 altitude is decent for ~4000 miles.
+    // Linear scaling for shorter routes (up to 4000 miles)
     if (dist <= 4000) {
-        return dist / 12000; // e.g. 4000 -> 0.33
+        return dist / 12000; // 4000 miles -> 0.33 altitude
     }
 
-    // For longer routes (>4000 miles), flatten the curve significantly
-    // "Bring down by about half" -> instead of continuing linear growth,
-    // we dampen it.
-    // Start from the 4000 mile baseline (0.33) and add very slowly.
-    // 10000 miles -> 0.33 + (6000 / 40000) = 0.33 + 0.15 = 0.48
-    // (Linear would have been 0.83)
+    // Dampened growth for long-haul routes to prevent excessive arc height
     return 0.33 + (dist - 4000) / 40000;
 }
 
@@ -682,11 +661,7 @@ function updateButtonIcon() {
     const mobile = isMobile();
     const hasClass = uiLayer.classList.contains('nav-toggle');
 
-    // Determine visibility based on state and screen size
-    // Desktop: Visible by default (no class), Hidden if class present
-    // Mobile: Hidden by default (no class), Visible if class present
-    // Determine visibility based on state
-    // Both Desktop and Mobile are Visible by default (no class), Hidden if class present
+    // Both desktop and mobile: visible by default, hidden when nav-toggle class present
     const isVisible = !hasClass;
 
     uiToggleBtn.setAttribute('aria-label', isVisible ? 'Hide UI' : 'Show UI');
