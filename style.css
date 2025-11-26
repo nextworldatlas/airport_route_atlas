@@ -248,15 +248,16 @@ body {
 /* UI Toggle Button */
 #ui-toggle-btn {
     position: absolute;
-    top: 10px;
-    right: 10px;
-    /* Position inside the panel */
-    width: 32px;
+    top: 20px;
+    right: -16px;
+    /* Position outside the panel */
+    width: 16px;
     height: 32px;
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.6);
     color: #fff;
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-left: none;
+    border-radius: 0 4px 4px 0;
     cursor: pointer;
     display: flex;
     align-items: center;

@@ -11,7 +11,7 @@ const CONFIG = {
     ROUTE_HIGHLIGHT_COLOR: '#ffd700',
     DEFAULT_RADIUS: 0.3,
     SHRINK_RADIUS: 0.2,
-    WORLD_LABEL_LIMIT: 250,
+    WORLD_LABEL_LIMIT: 500,
     SATELLITE_TILES: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
     CATEGORY_ORDER: ['Mega', 'Large', 'Medium', 'Small', 'Regional', 'Outpost']
 };
