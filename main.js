@@ -123,6 +123,26 @@ function getNetworkAltitudeFromMaxStage(maxStageMiles) {
     return minAlt + t * (maxAlt - minAlt);
 }
 
+function getRouteAltitude(route) {
+    const dist = parseFloat(route.stage);
+    if (isNaN(dist)) return 0.1;
+
+    // Standard scaling for shorter routes
+    // 4000 miles is roughly 6400km. Earth radius is 6371km.
+    // 0.3 altitude is decent for ~4000 miles.
+    if (dist <= 4000) {
+        return dist / 12000; // e.g. 4000 -> 0.33
+    }
+
+    // For longer routes (>4000 miles), flatten the curve significantly
+    // "Bring down by about half" -> instead of continuing linear growth,
+    // we dampen it.
+    // Start from the 4000 mile baseline (0.33) and add very slowly.
+    // 10000 miles -> 0.33 + (6000 / 40000) = 0.33 + 0.15 = 0.48
+    // (Linear would have been 0.83)
+    return 0.33 + (dist - 4000) / 40000;
+}
+
 // =======================
 // Globe Initialization
 // =======================
@@ -151,6 +171,7 @@ const globe = Globe()
 
     // Arcs (Routes)
     .arcColor(() => CONFIG.ROUTE_COLOR)
+    .arcAltitude(getRouteAltitude) // Custom altitude logic
     .arcDashLength(1)
     .arcDashGap(0)
     .arcDashAnimateTime(0)
@@ -242,50 +263,64 @@ function handleRouteHover(hoverRoute) {
 }
 
 function handleGlobeClick() {
-    // Only care if a route is currently selected
-    if (!selectedRoute) return;
+    // 1. If a route is selected, deselect it but keep the hub view
+    if (selectedRoute) {
+        selectedRoute = null;
+        updateRouteInfoPanel(null);
 
-    selectedRoute = null;
-    updateRouteInfoPanel(null);
+        // Revert to the hub view (all routes from selectedAirport)
+        if (selectedAirport) {
+            const activeRoutes = ROUTES
+                .filter(r => r.srcIata === selectedAirport.iata)
+                .map(r => {
+                    const src = AIRPORTS.find(a => a.iata === r.srcIata);
+                    const dst = AIRPORTS.find(a => a.iata === r.dstIata);
+                    if (!src || !dst) return null;
+                    return {
+                        startLat: parseFloat(src.lat),
+                        startLng: parseFloat(src.lng),
+                        endLat: parseFloat(dst.lat),
+                        endLng: parseFloat(dst.lng),
+                        ...r
+                    };
+                })
+                .filter(Boolean);
 
-    // If a hub is selected, rebuild its network view
+            globe.arcsData(activeRoutes);
+
+            // Restore stroke based on count
+            currentBaseStroke = activeRoutes.length > 50 ? 0.1 : 0.25;
+            globe.arcStroke(currentBaseStroke);
+
+            const connectedIatas = new Set([
+                selectedAirport.iata,
+                ...activeRoutes.map(r => r.dstIata)
+            ]);
+            VISIBLE_AIRPORTS = AIRPORTS.filter(a => connectedIatas.has(a.iata));
+            globe.pointsData(VISIBLE_AIRPORTS);
+
+            // Re-apply route view spacing
+            const maxStage = activeRoutes.reduce((max, r) => {
+                const v = parseFloat(r.stage);
+                return !isNaN(v) ? Math.max(max, v) : max;
+            }, 0);
+            const networkAltitude = getNetworkAltitudeFromMaxStage(maxStage);
+            const baseSpacing = isMobile() ? 500 : 150;
+            const dynamicSpacing = baseSpacing * (networkAltitude / 1.5);
+
+            const otherAirports = VISIBLE_AIRPORTS.filter(a => a !== selectedAirport);
+            const spacedOthers = getSpacedAirports(otherAirports, dynamicSpacing);
+            HTML_LABEL_AIRPORTS = [selectedAirport, ...spacedOthers];
+            globe.htmlElementsData(HTML_LABEL_AIRPORTS);
+
+            globe.arcColor(() => CONFIG.ROUTE_COLOR);
+        }
+        return;
+    }
+
+    // 2. If no route is selected but a hub IS selected, go back to world view
     if (selectedAirport) {
-        // Recreate the outbound routes from the selected hub
-        const activeRoutes = ROUTES
-            .filter(r => r.srcIata === selectedAirport.iata)
-            .map(r => {
-                const src = AIRPORTS.find(a => a.iata === r.srcIata);
-                const dst = AIRPORTS.find(a => a.iata === r.dstIata);
-                if (!src || !dst) return null;
-                return {
-                    startLat: parseFloat(src.lat),
-                    startLng: parseFloat(src.lng),
-                    endLat: parseFloat(dst.lat),
-                    endLng: parseFloat(dst.lng),
-                    ...r
-                };
-            })
-            .filter(Boolean);
-
-        globe.arcsData(activeRoutes);
-
-        // Restore stroke based on count
-        currentBaseStroke = activeRoutes.length > 50 ? 0.1 : 0.25;
-        globe.arcStroke(currentBaseStroke);
-
-        const connectedIatas = new Set([
-            selectedAirport.iata,
-            ...activeRoutes.map(r => r.dstIata)
-        ]);
-        VISIBLE_AIRPORTS = AIRPORTS.filter(a => connectedIatas.has(a.iata));
-        globe.pointsData(VISIBLE_AIRPORTS);
-        HTML_LABEL_AIRPORTS = VISIBLE_AIRPORTS;
-        globe.htmlElementsData(HTML_LABEL_AIRPORTS);
-
-        globe.arcColor(() => CONFIG.ROUTE_COLOR);
-    } else {
-        // No hub selected: fall back to full view
-        updateVisualization();
+        resetView();
     }
 }
 
