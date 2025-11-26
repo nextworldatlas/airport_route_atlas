@@ -479,7 +479,6 @@ function resetView() {
     });
 
     updateVisualization();
-    globe.pointOfView({ lat: 35, lng: -90, altitude: 1 }, 2000);
 
     selectedRoute = null;
     const routeInfo = document.getElementById('route-info-panel');
