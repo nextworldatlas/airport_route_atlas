@@ -249,15 +249,15 @@ body {
 #ui-toggle-btn {
     position: absolute;
     top: 20px;
-    right: -16px;
+    right: -20px;
     /* Position outside the panel */
-    width: 16px;
+    width: 20px;
     height: 32px;
     background: rgba(0, 0, 0, 0.6);
     color: #fff;
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-left: none;
-    border-radius: 0 4px 4px 0;
+    border-radius: 4px;
     cursor: pointer;
     display: flex;
     align-items: center;

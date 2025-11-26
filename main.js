@@ -242,7 +242,7 @@ function updateRouteInfoPanel(route) {
     }
 
     document.getElementById('route-flights').textContent =
-        route.flights || '-';
+        route.flights ? `${route.flights} avg` : '-';
     document.getElementById('route-stage').textContent =
         route.stage ? `${route.stage} mi` : '-';
     document.getElementById('route-duration').textContent =
