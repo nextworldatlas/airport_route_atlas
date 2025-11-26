@@ -352,6 +352,12 @@ function handleGlobeClick() {
             globe.htmlElementsData(HTML_LABEL_AIRPORTS);
 
             globe.arcColor(() => CONFIG.ROUTE_COLOR);
+        } else {
+            // Route was selected via route search (no airport hub)
+            // Clear the route search box and return to world view
+            const routeSearchInput = document.getElementById('route-search-input');
+            if (routeSearchInput) routeSearchInput.value = '';
+            resetView();
         }
         return;
     }
@@ -733,8 +739,8 @@ globe.onZoom(() => {
     // Throttle updates to avoid excessive recalculation
     if (labelUpdateTimeout) clearTimeout(labelUpdateTimeout);
     labelUpdateTimeout = setTimeout(() => {
-        if (!selectedAirport) {
-            // Only update in world view, not when viewing airport routes
+        if (!selectedAirport && !selectedRoute) {
+            // Only update in world view, not when viewing airport routes or specific routes
             updateVisualization();
         }
     }, 300); // 300ms delay after user stops moving
