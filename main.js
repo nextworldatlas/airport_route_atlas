@@ -653,15 +653,19 @@ function updateButtonIcon() {
     // Determine visibility based on state and screen size
     // Desktop: Visible by default (no class), Hidden if class present
     // Mobile: Hidden by default (no class), Visible if class present
-    let isVisible;
-    if (mobile) {
-        isVisible = hasClass;
-    } else {
-        isVisible = !hasClass;
-    }
+    // Determine visibility based on state
+    // Both Desktop and Mobile are Visible by default (no class), Hidden if class present
+    const isVisible = !hasClass;
 
-    uiToggleBtn.textContent = isVisible ? '◀' : '▶';
     uiToggleBtn.setAttribute('aria-label', isVisible ? 'Hide UI' : 'Show UI');
+
+    if (mobile) {
+        // Mobile: Up arrow to hide (slide up), Down arrow to show (slide down)
+        uiToggleBtn.textContent = isVisible ? '▲' : '▼';
+    } else {
+        // Desktop: Left arrow to hide (slide left), Right arrow to show (slide right)
+        uiToggleBtn.textContent = isVisible ? '◀' : '▶';
+    }
 }
 
 if (uiToggleBtn && uiLayer) {

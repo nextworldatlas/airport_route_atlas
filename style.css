@@ -24,6 +24,15 @@ body {
     max-width: 300px;
     z-index: 1000;
     /* Ensure it's above map labels */
+    box-sizing: border-box;
+    transition: transform 0.3s ease;
+    transform: translateX(0);
+    /* Default visible on desktop */
+}
+
+#ui-layer.nav-toggle {
+    transform: translateX(-100%);
+    /* Hidden when toggled on desktop */
 }
 
 #ui-layer h1 {
@@ -218,42 +227,57 @@ body {
     background: rgba(255, 255, 255, 0.2);
 }
 
-/* UI Layer Transitions */
-#ui-layer {
-    transition: transform 0.3s ease;
-    transform: translateX(0);
-    /* Default visible on desktop */
-}
-
-#ui-layer.nav-toggle {
-    transform: translateX(-100%);
-    /* Hidden when toggled on desktop */
-}
-
 /* Mobile Responsiveness */
 @media (max-width: 768px) {
     #ui-layer {
         top: 0;
         left: 0;
-        bottom: 0;
-        width: 80%;
-        max-width: 300px;
-        border-radius: 0;
-        height: 100vh;
-        box-sizing: border-box;
-        transform: translateX(-100%);
-        /* Default hidden on mobile */
+        bottom: auto;
+        width: 100%;
+        max-width: none;
+        height: auto;
+        max-height: 50vh;
+        /* Limit height on mobile */
+        border-radius: 0 0 12px 12px;
+        transform: translateY(0);
+        transition: transform 0.3s ease;
     }
 
     #ui-layer.nav-toggle {
-        transform: translateX(0);
-        /* Visible when toggled on mobile */
+        transform: translateY(-100%);
     }
 
     #ui-toggle-btn {
-        /* Keep it inside the panel on mobile too */
-        right: 10px;
-        top: 10px;
+        top: auto;
+        right: auto;
+        bottom: -30px;
+        /* Hang below the panel */
+        left: 50%;
+        transform: translateX(-50%);
+        width: 60px;
+        height: 30px;
+        border-radius: 0 0 8px 8px;
+        line-height: 30px;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    #controls {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    h1 {
+        font-size: 1.2rem;
+        margin-bottom: 4px;
+    }
+
+    p {
+        font-size: 0.8rem;
+        margin-bottom: 10px;
     }
 
     #route-info-panel {
