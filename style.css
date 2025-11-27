@@ -29,16 +29,13 @@ body {
     backdrop-filter: blur(5px);
     max-width: 300px;
     z-index: 1000;
-    /* Ensure it's above map labels */
     box-sizing: border-box;
     transition: transform 0.3s ease;
     transform: translateX(0);
-    /* Default visible on desktop */
 }
 
 #ui-layer.nav-toggle {
     transform: translateX(-100%);
-    /* Hidden when toggled on desktop */
 }
 
 #ui-layer h1 {
@@ -77,6 +74,7 @@ body {
 /* Dropdown & Button & Search */
 #category-filter,
 #reset-btn,
+#help-btn,
 #search-input,
 #route-search-input {
     background: rgba(0, 0, 0, 0.6);
@@ -101,12 +99,31 @@ body {
     cursor: pointer;
 }
 
-#reset-btn {
+#reset-btn,
+#help-btn {
     cursor: pointer;
+}
+
+/* Button Container */
+#button-container {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+}
+
+#reset-btn {
+    flex: 0 0 calc(75% - 4px);
+}
+
+#help-btn {
+    flex: 0 0 calc(25% - 4px);
+    font-size: 18px;
+    font-weight: bold;
 }
 
 #category-filter:hover,
 #reset-btn:hover,
+#help-btn:hover,
 #search-input:hover,
 #route-search-input:hover {
     background: rgba(0, 0, 0, 0.8);
@@ -115,13 +132,15 @@ body {
 
 #category-filter:focus,
 #reset-btn:focus,
+#help-btn:focus,
 #search-input:focus,
 #route-search-input:focus {
     outline: none;
     border-color: #8ddcff;
 }
 
-#reset-btn:active {
+#reset-btn:active,
+#help-btn:active {
     background: rgba(255, 255, 255, 0.1);
 }
 
@@ -196,7 +215,6 @@ body {
     flex-direction: column;
     align-items: center;
     width: 100px;
-    /* Fixed width for alignment */
 }
 
 .route-iata {
@@ -213,7 +231,6 @@ body {
     text-align: center;
     line-height: 1.2;
     white-space: normal;
-    /* Allow wrapping if needed, or keep nowrap */
     max-width: 100%;
 }
 
@@ -223,7 +240,6 @@ body {
     color: #8ddcff;
     line-height: 1;
     margin-top: 0;
-    /* Align with IATA text */
 }
 
 .route-stat {
@@ -250,10 +266,9 @@ body {
     position: absolute;
     top: 20px;
     right: -20px;
-    /* Position outside the panel */
     width: 20px;
     height: 32px;
-    background: rgba(0, 0, 0, 0.6);
+    background: rgba(26, 17, 100, 0.656);
     color: #fff;
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-left: none;
@@ -266,11 +281,128 @@ body {
     transition: background 0.2s;
     z-index: 1001;
     pointer-events: auto;
-    /* Ensure it's clickable */
 }
 
 #ui-toggle-btn:hover {
+    background: rgba(255, 255, 255, 0.5);
+}
+
+/* FAQ Modal */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(10px);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.modal-content {
+    background: rgba(20, 20, 30, 0.95);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    max-width: 800px;
+    width: 100%;
+    max-height: 90vh;
+    overflow: auto;
+    padding: 40px;
+    position: relative;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+}
+
+.modal-content h2 {
+    margin: 0 0 30px 0;
+    color: #fff;
+    font-size: 1.8rem;
+    text-align: center;
+}
+
+.modal-close {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: transparent;
+    border: none;
+    color: #fff;
+    font-size: 32px;
+    cursor: pointer;
+    line-height: 1;
+    padding: 5px 10px;
+    transition: color 0.2s;
+}
+
+.modal-close:hover {
+    color: #8ddcff;
+}
+
+/* Carousel */
+.carousel {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.carousel-slides {
+    flex: 1;
+    overflow: hidden;
+    border-radius: 8px;
+}
+
+.carousel-slide {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+.carousel-slide.active {
+    display: flex;
+}
+
+.carousel-slide img {
+    max-width: 50%;
+    height: auto;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.carousel-slide p {
+    color: #ccc;
+    font-size: 1.1rem;
+    text-align: center;
+    margin: 0;
+}
+
+.carousel-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #fff;
+    font-size: 24px;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.carousel-btn:hover {
     background: rgba(255, 255, 255, 0.2);
+    border-color: #8ddcff;
+}
+
+.carousel-btn:active {
+    background: rgba(255, 255, 255, 0.3);
 }
 
 /* Mobile Responsiveness */
@@ -283,7 +415,6 @@ body {
         max-width: none;
         height: auto;
         max-height: 50vh;
-        /* Limit height on mobile */
         border-radius: 0 0 12px 12px;
         transform: translateY(0);
         transition: transform 0.3s ease;
@@ -297,7 +428,6 @@ body {
         top: auto;
         right: auto;
         bottom: -30px;
-        /* Hang below the panel */
         left: 50%;
         transform: translateX(-50%);
         width: 60px;
@@ -332,5 +462,29 @@ body {
         left: 20px;
         right: 20px;
         width: auto;
+    }
+
+    .modal-content {
+        padding: 30px 20px;
+    }
+
+    .modal-content h2 {
+        font-size: 1.4rem;
+        margin-bottom: 20px;
+    }
+
+    .carousel {
+        flex-direction: column;
+    }
+
+    .carousel-btn {
+        width: 40px;
+        height: 40px;
+        font-size: 20px;
+    }
+
+    .carousel-prev,
+    .carousel-next {
+        position: static;
     }
 }

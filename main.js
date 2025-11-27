@@ -185,6 +185,7 @@ const globe = Globe()
         return d === selectedAirport ? altitude * 1.5 : altitude;
     })
     .pointLabel(d => `<b>${d.name} (${getIataCode(d)})</b><br>${d.country}`)
+    .pointResolution(4)
     .onPointClick(handleAirportClick)
 
     // Arcs (Routes)
@@ -681,6 +682,76 @@ document.getElementById('route-search-input')?.addEventListener('input', (e) => 
 });
 
 document.getElementById('reset-btn')?.addEventListener('click', resetView);
+
+// FAQ Modal Logic
+const faqModal = document.getElementById('faq-modal');
+const helpBtn = document.getElementById('help-btn');
+const modalClose = document.querySelector('.modal-close');
+const carouselPrev = document.querySelector('.carousel-prev');
+const carouselNext = document.querySelector('.carousel-next');
+let currentSlide = 0;
+
+function showSlide(index) {
+    const slides = document.querySelectorAll('.carousel-slide');
+    if (index >= slides.length) currentSlide = 0;
+    if (index < 0) currentSlide = slides.length - 1;
+
+    slides.forEach((slide, i) => {
+        slide.classList.toggle('active', i === currentSlide);
+    });
+}
+
+function openModal() {
+    if (faqModal) {
+        faqModal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+        currentSlide = 0;
+        showSlide(0);
+    }
+}
+
+function closeModal() {
+    if (faqModal) {
+        faqModal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+    }
+}
+
+helpBtn?.addEventListener('click', openModal);
+modalClose?.addEventListener('click', closeModal);
+
+carouselPrev?.addEventListener('click', () => {
+    currentSlide--;
+    showSlide(currentSlide);
+});
+
+carouselNext?.addEventListener('click', () => {
+    currentSlide++;
+    showSlide(currentSlide);
+});
+
+// Close modal when clicking outside content
+faqModal?.addEventListener('click', (e) => {
+    if (e.target === faqModal) {
+        closeModal();
+    }
+});
+
+// Keyboard navigation
+document.addEventListener('keydown', (e) => {
+    if (faqModal && faqModal.style.display === 'flex') {
+        if (e.key === 'Escape') {
+            closeModal();
+        } else if (e.key === 'ArrowLeft') {
+            currentSlide--;
+            showSlide(currentSlide);
+        } else if (e.key === 'ArrowRight') {
+            currentSlide++;
+            showSlide(currentSlide);
+        }
+    }
+});
+
 
 // Close suggestions on click outside
 document.addEventListener('click', (e) => {

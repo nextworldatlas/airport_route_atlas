@@ -26,7 +26,7 @@
     <div id="ui-layer">
         <button id="ui-toggle-btn" aria-label="Toggle UI">◀</button>
         <h1>Airport Route Atlas</h1>
-        <p>Click an airport to view outbound routes.</p>
+        <p>Every commercial route mapped<br>Click airport, and route pop-up for info</p>
         <div id="controls">
             <div id="search-wrapper">
                 <input type="text" id="search-input" placeholder="Search Airport Code or Name">
@@ -39,7 +39,10 @@
             <select id="category-filter">
                 <option value="">All Categories</option>
             </select>
-            <button id="reset-btn">Reset View</button>
+            <div id="button-container">
+                <button id="reset-btn">Reset View</button>
+                <button id="help-btn" aria-label="Help">?</button>
+            </div>
         </div>
 
         <div id="loading">Loading flight data...</div>
@@ -68,6 +71,36 @@
         <div class="route-stat">
             <span class="label">Avg Flight Duration</span>
             <span class="value" id="route-duration">-</span>
+        </div>
+    </div>
+
+    <!-- FAQ Modal -->
+    <div id="faq-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <button class="modal-close" aria-label="Close FAQ">&times;</button>
+            <h2>How to Use Airport Route Atlas</h2>
+            <div class="carousel">
+                <button class="carousel-btn carousel-prev" aria-label="Previous">&larr;</button>
+                <div class="carousel-slides">
+                    <div class="carousel-slide active">
+                        <img src="faq_lax_tooltip.png" alt="Hover over an airport to see its name and location">
+                        <p>Hover over an airport to see its name and location</p>
+                    </div>
+                    <div class="carousel-slide">
+                        <img src="faq_sin_routes.png" alt="Click an airport to view all outbound routes">
+                        <p>Click an airport to view all outbound routes</p>
+                    </div>
+                    <div class="carousel-slide">
+                        <img src="faq_cdg_ist_route.png" alt="Click a route to highlight and view details">
+                        <p>Click a route to highlight and view details</p>
+                    </div>
+                    <div class="carousel-slide">
+                        <img src="faq_notes.png" alt="Data source information">
+                        <p>About the data</p>
+                    </div>
+                </div>
+                <button class="carousel-btn carousel-next" aria-label="Next">&rarr;</button>
+            </div>
         </div>
     </div>
 
