@@ -228,6 +228,35 @@ const globe = Globe()
     })
     .htmlElement(createLabelElement);
 
+// Configure controls for faster zoom and pan
+globe.controls().zoomSpeed = 2;      // Default is 1, increase for faster zoom
+globe.controls().rotateSpeed = 1;    // Default is 0.5, increase for faster pan/rotation
+
+// Configure auto-rotation
+globe.controls().autoRotate = true;
+globe.controls().autoRotateSpeed = 0.5;  // Rotation speed (negative for opposite direction)
+
+// Pause auto-rotation on user interaction, resume after inactivity
+let autoRotateResumeTimeout = null;
+const resumeAutoRotateAfterMs = 3000; // 3 seconds of inactivity
+
+// Pause rotation when user starts interacting
+globe.controls().addEventListener('start', () => {
+    globe.controls().autoRotate = false;
+    if (autoRotateResumeTimeout) {
+        clearTimeout(autoRotateResumeTimeout);
+        autoRotateResumeTimeout = null;
+    }
+});
+
+// Resume rotation after user stops interacting
+globe.controls().addEventListener('end', () => {
+    if (autoRotateResumeTimeout) clearTimeout(autoRotateResumeTimeout);
+    autoRotateResumeTimeout = setTimeout(() => {
+        globe.controls().autoRotate = true;
+    }, resumeAutoRotateAfterMs);
+});
+
 function createLabelElement(d) {
     const code = getIataCode(d);
     if (!code) return null;
