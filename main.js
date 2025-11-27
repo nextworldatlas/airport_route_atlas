@@ -166,13 +166,13 @@ function getRouteAltitude(route) {
     const dist = parseFloat(route.stage);
     if (isNaN(dist)) return 0.1;
 
-    // Linear scaling for shorter routes (up to 4000 miles)
+    // Reduced scaling for shorter routes (up to 4000 miles)
     if (dist <= 4000) {
-        return dist / 12000; // 4000 miles -> 0.33 altitude
+        return dist / 16000; // 4000 miles -> 0.25 altitude (reduced from 0.33)
     }
 
-    // Dampened growth for long-haul routes to prevent excessive arc height
-    return 0.33 + (dist - 4000) / 40000;
+    // More aggressive dampening for long-haul routes to keep arcs lower
+    return 0.25 + (dist - 4000) / 80000; // Even flatter growth for long routes
 }
 
 // =======================
