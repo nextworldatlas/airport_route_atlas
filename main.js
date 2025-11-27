@@ -24,6 +24,11 @@ let VISIBLE_AIRPORTS = [];
 let HTML_LABEL_AIRPORTS = [];
 let currentBaseStroke = 0.25;
 
+// Double-tap tracking for mobile
+let lastTapTime = 0;
+let tapTimeout = null;
+const DOUBLE_TAP_DELAY = 300; // milliseconds
+
 // =======================
 // Helpers
 // =======================
@@ -363,9 +368,34 @@ function handleGlobeClick() {
         return;
     }
 
-    // 2. If no route is selected but a hub IS selected, go back to world view
+    // 2. If no route is selected but a hub IS selected, handle exit to world view
     if (selectedAirport) {
-        resetView();
+        // On mobile, require double-tap to exit hub view
+        if (isMobile()) {
+            const currentTime = new Date().getTime();
+            const timeSinceLastTap = currentTime - lastTapTime;
+
+            if (timeSinceLastTap < DOUBLE_TAP_DELAY) {
+                // Double-tap detected - exit to world view
+                clearTimeout(tapTimeout);
+                resetView();
+                lastTapTime = 0;
+            } else {
+                // First tap - wait for potential second tap
+                lastTapTime = currentTime;
+
+                // Clear any existing timeout
+                if (tapTimeout) clearTimeout(tapTimeout);
+
+                // Reset after delay if no second tap
+                tapTimeout = setTimeout(() => {
+                    lastTapTime = 0;
+                }, DOUBLE_TAP_DELAY);
+            }
+        } else {
+            // Desktop: single click exits hub view
+            resetView();
+        }
     }
 }
 
