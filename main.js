@@ -142,8 +142,19 @@ function getNetworkAltitudeFromMaxStage(maxStageMiles) {
     // Calculate zoom altitude based on route distances
     const MIN_STAGE = 200;  // Short routes
     const MAX_STAGE = 6000; // Ultra-long haul
-    const minAlt = 0.6;     // Closest zoom
-    const maxAlt = 1.1;     // Farthest zoomR
+
+    // For very short haul networks (< 500 miles), zoom in very close
+    if (maxStageMiles < 500) {
+        return 0.2; // Very close zoom for regional airports
+    }
+
+    // For short to medium haul (500-1500 miles), still zoom closer
+    if (maxStageMiles < 1500) {
+        return 0.4 + (maxStageMiles - 500) / 10000; // 0.4 to 0.5 altitude
+    }
+
+    const minAlt = 0.5;     // Closest zoom for longer networks
+    const maxAlt = 1.1;     // Farthest zoom
 
     const s = Math.max(MIN_STAGE, Math.min(MAX_STAGE, maxStageMiles || MIN_STAGE));
     const t = (s - MIN_STAGE) / (MAX_STAGE - MIN_STAGE);
