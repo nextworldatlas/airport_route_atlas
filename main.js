@@ -234,8 +234,8 @@ globe.controls().rotateSpeed = 1;    // Default is 0.5, increase for faster pan/
 
 // Configure auto-rotation
 // Configure auto-rotation
-let isRotationEnabled = true; // Global state for user preference
-globe.controls().autoRotate = true;
+let isRotationEnabled = false; // Global state for user preference
+globe.controls().autoRotate = false;
 globe.controls().autoRotateSpeed = 0.5;  // Rotation speed (negative for opposite direction)
 
 // Pause auto-rotation on user interaction, resume after inactivity
