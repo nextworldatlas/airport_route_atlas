@@ -233,6 +233,8 @@ globe.controls().zoomSpeed = 2;      // Default is 1, increase for faster zoom
 globe.controls().rotateSpeed = 1;    // Default is 0.5, increase for faster pan/rotation
 
 // Configure auto-rotation
+// Configure auto-rotation
+let isRotationEnabled = true; // Global state for user preference
 globe.controls().autoRotate = true;
 globe.controls().autoRotateSpeed = 0.5;  // Rotation speed (negative for opposite direction)
 
@@ -251,11 +253,34 @@ globe.controls().addEventListener('start', () => {
 
 // Resume rotation after user stops interacting
 globe.controls().addEventListener('end', () => {
+    if (!isRotationEnabled) return; // Don't resume if user explicitly paused it
+
     if (autoRotateResumeTimeout) clearTimeout(autoRotateResumeTimeout);
     autoRotateResumeTimeout = setTimeout(() => {
-        globe.controls().autoRotate = true;
+        if (isRotationEnabled) {
+            globe.controls().autoRotate = true;
+        }
     }, resumeAutoRotateAfterMs);
 });
+
+// Rotation Toggle Button Logic
+const rotationBtn = document.getElementById('rotation-toggle-btn');
+if (rotationBtn) {
+    rotationBtn.addEventListener('click', () => {
+        isRotationEnabled = !isRotationEnabled;
+
+        if (isRotationEnabled) {
+            globe.controls().autoRotate = true;
+            rotationBtn.innerHTML = '<span class="icon">⏸</span>';
+            rotationBtn.setAttribute('aria-label', 'Pause Rotation');
+        } else {
+            globe.controls().autoRotate = false;
+            if (autoRotateResumeTimeout) clearTimeout(autoRotateResumeTimeout);
+            rotationBtn.innerHTML = '<span class="icon">▶</span>';
+            rotationBtn.setAttribute('aria-label', 'Resume Rotation');
+        }
+    });
+}
 
 function createLabelElement(d) {
     const code = getIataCode(d);

@@ -488,3 +488,42 @@ body {
         position: static;
     }
 }
+
+/* Rotation Toggle Button */
+#rotation-toggle-btn {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    width: 40px;
+    height: 40px;
+    background: rgba(0, 0, 0, 0.6);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(5px);
+    transition: all 0.2s;
+    z-index: 1000;
+    font-size: 18px;
+}
+
+#rotation-toggle-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: #8ddcff;
+    transform: scale(1.1);
+}
+
+#rotation-toggle-btn:active {
+    transform: scale(0.95);
+}
+
+@media (max-width: 768px) {
+    #rotation-toggle-btn {
+        bottom: 80px;
+        /* Above the bottom sheet/info panel */
+        right: 20px;
+    }
+}
