@@ -205,15 +205,27 @@ const globe = Globe()
     .onPointClick(handleAirportClick)
 
     // Arcs (Routes)
-    .arcColor(() => CONFIG.ROUTE_COLOR)
+    // Arcs (Routes)
+    .arcColor(d => {
+        if (d.isHitTarget === true) return 'rgba(0,0,0,0)';
+        return d === selectedRoute ? CONFIG.ROUTE_HIGHLIGHT_COLOR : CONFIG.ROUTE_COLOR;
+    })
     .arcAltitude(getRouteAltitude) // Custom altitude logic
     .arcDashLength(1)
     .arcDashGap(0)
     .arcDashAnimateTime(0)
-    .arcStroke(0.25)
+    .arcStroke(d => {
+        if (d.isHitTarget === true) {
+            // Invisible target: wider for longer routes
+            // Base width 0.5, add 0.5 per 4000 miles (reduced to prevent blocking)
+            const dist = parseFloat(d.stage) || 0;
+            return 0.5 + (dist / 4000);
+        }
+        return d === selectedRoute ? 0.8 : (currentBaseStroke || 0.25);
+    })
     .arcsData([])
     .onArcHover(handleRouteHover)
-    .onArcClick(handleRouteClick)
+    .onArcClick(d => handleRouteClick(d.visibleSibling || d))
     .onGlobeClick(handleGlobeClick)
 
     // HTML Labels
@@ -353,19 +365,37 @@ function handleRouteHover(hoverRoute) {
     // If a route is selected/locked, don't override the panel
     if (selectedRoute) return;
 
-    if (hoverRoute) {
-        // highlight hovered route
-        globe.arcColor(d =>
-            d === hoverRoute ? CONFIG.ROUTE_HIGHLIGHT_COLOR : CONFIG.ROUTE_COLOR
-        );
-        globe.arcStroke(d => (d === hoverRoute ? 0.5 : currentBaseStroke));
+    const actualRoute = hoverRoute?.visibleSibling || hoverRoute;
+
+    if (actualRoute) {
+        // highlight hovered route (and ensure invisible target doesn't flash)
+        globe.arcColor(d => {
+            if (d.isHitTarget === true) return 'rgba(0,0,0,0)';
+            return d === actualRoute ? CONFIG.ROUTE_HIGHLIGHT_COLOR : CONFIG.ROUTE_COLOR;
+        });
+        globe.arcStroke(d => {
+            if (d.isHitTarget === true) {
+                const dist = parseFloat(d.stage) || 0;
+                return 0.5 + (dist / 4000);
+            }
+            return d === actualRoute ? 0.5 : currentBaseStroke;
+        });
 
         // show hover info in the existing panel
-        updateRouteInfoPanel(hoverRoute);
+        updateRouteInfoPanel(actualRoute);
     } else {
         // hover out: clear highlights & panel (if nothing selected)
-        globe.arcColor(() => CONFIG.ROUTE_COLOR);
-        globe.arcStroke(() => currentBaseStroke);
+        globe.arcColor(d => {
+            if (d.isHitTarget === true) return 'rgba(0,0,0,0)';
+            return CONFIG.ROUTE_COLOR;
+        });
+        globe.arcStroke(d => {
+            if (d.isHitTarget === true) {
+                const dist = parseFloat(d.stage) || 0;
+                return 0.5 + (dist / 4000);
+            }
+            return currentBaseStroke;
+        });
 
         updateRouteInfoPanel(null);
     }
@@ -379,31 +409,28 @@ function handleGlobeClick() {
 
         // Revert to the hub view (all routes from selectedAirport)
         if (selectedAirport) {
-            const activeRoutes = ROUTES
-                .filter(r => r.srcIata === selectedAirport.iata)
-                .map(r => {
-                    const src = AIRPORTS.find(a => a.iata === r.srcIata);
-                    const dst = AIRPORTS.find(a => a.iata === r.dstIata);
-                    if (!src || !dst) return null;
-                    return {
-                        startLat: parseFloat(src.lat),
-                        startLng: parseFloat(src.lng),
-                        endLat: parseFloat(dst.lat),
-                        endLng: parseFloat(dst.lng),
-                        ...r
-                    };
-                })
-                .filter(Boolean);
+            const activeRoutes = getHubRoutes(selectedAirport);
 
             globe.arcsData(activeRoutes);
 
+            // Count visible routes (exclude hidden targets)
+            const visibleCount = activeRoutes.filter(r => !r.isHitTarget).length;
+
             // Restore stroke based on count
-            currentBaseStroke = activeRoutes.length > 50 ? 0.1 : 0.25;
-            globe.arcStroke(currentBaseStroke);
+            currentBaseStroke = visibleCount > 50 ? 0.1 : 0.25;
+
+            // Apply stroke logic (same as initialization)
+            globe.arcStroke(d => {
+                if (d.isHitTarget === true) {
+                    const dist = parseFloat(d.stage) || 0;
+                    return 0.5 + (dist / 4000);
+                }
+                return currentBaseStroke;
+            });
 
             const connectedIatas = new Set([
                 selectedAirport.iata,
-                ...activeRoutes.map(r => r.dstIata)
+                ...activeRoutes.filter(r => !r.isHitTarget).map(r => r.dstIata)
             ]);
             VISIBLE_AIRPORTS = AIRPORTS.filter(a => connectedIatas.has(a.iata));
             globe.pointsData(VISIBLE_AIRPORTS);
@@ -422,7 +449,10 @@ function handleGlobeClick() {
             HTML_LABEL_AIRPORTS = [selectedAirport, ...spacedOthers];
             globe.htmlElementsData(HTML_LABEL_AIRPORTS);
 
-            globe.arcColor(() => CONFIG.ROUTE_COLOR);
+            globe.arcColor(d => {
+                if (d.isHitTarget === true) return 'rgba(0,0,0,0)';
+                return CONFIG.ROUTE_COLOR;
+            });
         } else {
             // Route was selected via route search (no airport hub)
             // Clear the route search box and return to world view
@@ -613,6 +643,39 @@ function handleRouteClick(route) {
     globe.pointOfView({ lat: route.startLat, lng: route.startLng, altitude: routeAltitude }, 1000);
 }
 
+
+function getHubRoutes(airport) {
+    // Generate visible routes
+    const visibleRoutes = ROUTES
+        .filter(r => r.srcIata === airport.iata)
+        .map(r => {
+            const src = AIRPORTS.find(a => a.iata === r.srcIata);
+            const dst = AIRPORTS.find(a => a.iata === r.dstIata);
+            if (!src || !dst) return null;
+            return {
+                startLat: parseFloat(src.lat),
+                startLng: parseFloat(src.lng),
+                endLat: parseFloat(dst.lat),
+                endLng: parseFloat(dst.lng),
+                ...r,
+                isHitTarget: false
+            };
+        })
+        .filter(Boolean);
+
+    if (isMobile()) {
+        // Create invisible hit targets
+        const hitTargets = visibleRoutes.map(r => ({
+            ...r,
+            isHitTarget: true,
+            visibleSibling: r
+        }));
+        return [...visibleRoutes, ...hitTargets];
+    }
+
+    return visibleRoutes;
+}
+
 function handleAirportClick(airport) {
     if (!airport) return;
 
@@ -628,28 +691,23 @@ function handleAirportClick(airport) {
     if (searchInput) searchInput.value = getIataCode(airport);
 
     // Build outbound routes
-    const activeRoutes = ROUTES
-        .filter(r => r.srcIata === airport.iata)
-        .map(r => {
-            const src = AIRPORTS.find(a => a.iata === r.srcIata);
-            const dst = AIRPORTS.find(a => a.iata === r.dstIata);
-            if (!src || !dst) return null;
-            return {
-                startLat: parseFloat(src.lat),
-                startLng: parseFloat(src.lng),
-                endLat: parseFloat(dst.lat),
-                endLng: parseFloat(dst.lng),
-                ...r
-            };
-        })
-        .filter(Boolean);
+    const activeRoutes = getHubRoutes(airport);
 
     console.log('Found routes:', activeRoutes.length);
     globe.arcsData(activeRoutes);
 
     // Dynamic Route Thickness
-    currentBaseStroke = activeRoutes.length > 50 ? 0.1 : 0.25;
-    globe.arcStroke(currentBaseStroke);
+    // Count visible routes only
+    const visibleCount = activeRoutes.filter(r => !r.isHitTarget).length;
+    currentBaseStroke = visibleCount > 50 ? 0.1 : 0.25;
+
+    globe.arcStroke(d => {
+        if (d.isHitTarget === true) {
+            const dist = parseFloat(d.stage) || 0;
+            return 0.5 + (dist / 4000);
+        }
+        return currentBaseStroke;
+    });
 
     // Reset route selection
     selectedRoute = null;
@@ -657,7 +715,8 @@ function handleAirportClick(airport) {
     if (routeInfo) routeInfo.style.display = 'none';
 
     // Filter visible airports
-    const connectedIatas = new Set([airport.iata, ...activeRoutes.map(r => r.dstIata)]);
+    // Filter visible airports
+    const connectedIatas = new Set([airport.iata, ...activeRoutes.filter(r => !r.isHitTarget).map(r => r.dstIata)]);
     VISIBLE_AIRPORTS = AIRPORTS.filter(a => connectedIatas.has(a.iata));
     globe.pointsData(VISIBLE_AIRPORTS);
     HTML_LABEL_AIRPORTS = VISIBLE_AIRPORTS;
