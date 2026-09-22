@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <title>Airport Route Atlas</title>
+  <!-- Blueprint palette: Ocean tile, Marker plane -->
+  <rect width="100" height="100" rx="4" fill="#0e3a5f"/>
+  <path fill="#ff8a3d" d="M83.7 16.3C86.2 18.9 84.9 22.8 81.1 26.6L67.6 40.1L77.2 77.9L71.5 83.7L54.1 53.6L42.6 65.1L45.8 81.1L42 85L34.9 72.8L26.6 73.4L27.2 65.1L15 58L18.9 54.2L34.9 57.4L46.4 45.9L16.3 28.5L22.1 22.8L59.9 32.4L73.4 18.9C77.2 15.1 81.1 13.8 83.7 16.3Z"/>
+</svg>

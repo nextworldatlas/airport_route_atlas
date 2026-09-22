@@ -3,11 +3,13 @@ import { csvParse } from 'https://esm.sh/d3-dsv';
 // =======================
 // Configuration
 // =======================
+// Colors mirror the Blueprint tokens in style.css
 const CONFIG = {
-    AIRPORT_COLOR: '#8ddcff',
-    AIRPORT_SELECTED_COLOR: '#991933',
-    ROUTE_COLOR: '#ffffff',
-    ROUTE_HIGHLIGHT_COLOR: '#ffd700',
+    AIRPORT_COLOR: '#7bd3ea',          // --dimension
+    AIRPORT_SELECTED_COLOR: '#ff8a3d', // --marker
+    ROUTE_COLOR: '#eaf4fb',            // --paper
+    ROUTE_HIGHLIGHT_COLOR: '#ff8a3d',  // --marker
+    ATMOSPHERE_COLOR: '#7bd3ea',       // --dimension
     MAX_LABELS: 50,
     SATELLITE_TILES: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
     CATEGORY_ORDER: ['Large', 'Medium', 'Small']
@@ -181,7 +183,8 @@ function getRouteAltitude(route) {
 const globe = Globe()
     (document.getElementById('globeViz'))
     .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
-    .backgroundImageUrl('https://unpkg.com/three-globe/example/img/night-sky.png')
+    .backgroundColor('rgba(0, 0, 0, 0)') // transparent, so the drafting grid in style.css shows through
+    .atmosphereColor(CONFIG.ATMOSPHERE_COLOR)
     .globeTileEngineUrl((x, y, z) =>
         CONFIG.SATELLITE_TILES.replace('{z}', z).replace('{x}', x).replace('{y}', y)
     )
@@ -300,20 +303,18 @@ function createLabelElement(d) {
 
     const div = document.createElement('div');
     div.textContent = code;
-    Object.assign(div.style, {
-        background: 'rgba(0, 0, 0, 0.5)',
-        color: 'white',
-        padding: '2px 6px',
-        borderRadius: '4px',
-        display: 'inline-block',
-        pointerEvents: 'none',
-        boxShadow: '0 0 8px rgba(0, 0, 0, 0.9)',
-        textShadow: '0 0 4px rgba(0, 0, 0, 0.9)',
-        fontSize: d === selectedAirport ? '14px' : '11px',
-        fontWeight: d === selectedAirport ? '700' : '500',
-        border: d === selectedAirport ? '1px solid rgba(255, 255, 255, 0.9)' : 'none'
-    });
+    div.dataset.iata = code;
+    div.className = d === selectedAirport ? 'airport-label selected' : 'airport-label';
     return div;
+}
+
+// globe.gl reuses label elements for airports that stay on screen, so
+// createLabelElement doesn't run again when the selection changes
+function syncSelectedLabel() {
+    const selectedCode = selectedAirport ? getIataCode(selectedAirport) : null;
+    document.querySelectorAll('.airport-label').forEach(el => {
+        el.classList.toggle('selected', el.dataset.iata === selectedCode);
+    });
 }
 
 // =======================
@@ -531,6 +532,7 @@ function updateVisualization() {
     HTML_LABEL_AIRPORTS = spacedAirports.slice(0, CONFIG.MAX_LABELS);
 
     globe.htmlElementsData(HTML_LABEL_AIRPORTS);
+    syncSelectedLabel();
 }
 
 function createSuggestions(searchTerm, type) {
@@ -743,6 +745,7 @@ function handleAirportClick(airport) {
     // Ensure selectedAirport is at the front
     HTML_LABEL_AIRPORTS = [selectedAirport, ...spacedOthers];
     globe.htmlElementsData(HTML_LABEL_AIRPORTS);
+    syncSelectedLabel();
 
     globe.pointOfView({
         lat: parseFloat(airport.lat),
@@ -812,7 +815,7 @@ async function loadData() {
         const loadingEl = document.getElementById('loading');
         if (loadingEl) {
             loadingEl.textContent = 'Error loading data. See console.';
-            loadingEl.style.color = 'red';
+            loadingEl.style.color = 'var(--marker)';
             if (window.location.protocol === 'file:') {
                 alert('Error: Cannot load data when opening via file://. Please run a local server.');
             }

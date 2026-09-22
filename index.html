@@ -5,6 +5,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Airport Route Atlas</title>
+    <meta name="theme-color" content="#0e3a5f">
+    <link rel="icon" type="image/svg+xml" href="logo.svg">
+    <link rel="preload" href="fonts/Frank-Regular.otf" as="font" type="font/otf" crossorigin>
+    <link rel="preload" href="fonts/Frank-Bold.otf" as="font" type="font/otf" crossorigin>
+    <link rel="preload" href="fonts/Frank-Black.otf" as="font" type="font/otf" crossorigin>
     <link rel="stylesheet" href="style.css">
 
     <!-- Google tag (gtag.js) -->
@@ -25,7 +30,10 @@
     <div id="globeViz"></div>
     <div id="ui-layer">
         <button id="ui-toggle-btn" aria-label="Toggle UI">◀</button>
-        <h1>Airport Route Atlas</h1>
+        <div class="brand">
+            <img class="brand-logo" src="logo.svg" alt="" width="44" height="44">
+            <h1>Airport Route Atlas</h1>
+        </div>
         <p>Every commercial route mapped<br>Click airport, and route pop-up for info</p>
         <div id="controls">
             <div id="search-wrapper">
