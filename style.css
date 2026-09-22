@@ -30,8 +30,11 @@
     box-sizing: border-box;
 }
 
-/* Black is reserved for the big flight codes; headings run Bold */
-h1,
+/* Black is reserved for the site title; the FAQ heading runs Bold */
+h1 {
+    font-weight: var(--w-black);
+}
+
 h2 {
     font-weight: var(--w-bold);
 }
@@ -343,7 +346,7 @@ body {
 }
 
 .route-iata {
-    font-weight: var(--w-black);
+    font-weight: var(--w-bold);
     font-size: 30px;
     line-height: 1;
     letter-spacing: -0.02em;
