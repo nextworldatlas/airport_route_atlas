@@ -390,7 +390,7 @@ body {
 }
 
 .route-stat .value {
-    font-weight: var(--w-bold);
+    font-weight: var(--w-regular);
     font-size: 18px;
     color: var(--paper);
 }
