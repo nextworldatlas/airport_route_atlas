@@ -13,10 +13,11 @@
     --on-accent: #0b0b0b;  /* text on marker/dimension fills */
     --radius: 2px;
 
-    /* Montserrat is linked from Google Fonts in index.html */
+    /* Montserrat is linked from Google Fonts in index.html.
+       The guide's Black (900) is deliberately unused, so index.html doesn't
+       request it - add it back to the link before using it anywhere. */
     --font: 'Montserrat', sans-serif;
-    --w-black: 900;        /* headlines, data */
-    --w-bold: 700;         /* buttons, labels, chips */
+    --w-bold: 700;         /* headings, buttons, labels, chips */
     --w-regular: 400;      /* body, inputs */
 
     /* Panels float over the globe, so they are very slightly translucent */
@@ -30,11 +31,7 @@
     box-sizing: border-box;
 }
 
-/* Black is reserved for the site title; the FAQ heading runs Bold */
-h1 {
-    font-weight: var(--w-black);
-}
-
+h1,
 h2 {
     font-weight: var(--w-bold);
 }
