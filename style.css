@@ -30,9 +30,10 @@
     box-sizing: border-box;
 }
 
+/* Black is reserved for the big flight codes; headings run Bold */
 h1,
 h2 {
-    font-weight: var(--w-black);
+    font-weight: var(--w-bold);
 }
 
 b,
@@ -361,7 +362,7 @@ body {
 
 /* The dash between the codes echoes the orange highlighted arc */
 .route-separator {
-    font-weight: var(--w-black);
+    font-weight: var(--w-bold);
     font-size: 30px;
     line-height: 1;
     color: var(--marker);
@@ -389,7 +390,7 @@ body {
 }
 
 .route-stat .value {
-    font-weight: var(--w-black);
+    font-weight: var(--w-bold);
     font-size: 18px;
     color: var(--paper);
 }
