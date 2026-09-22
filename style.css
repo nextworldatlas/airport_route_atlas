@@ -13,9 +13,11 @@
     --on-accent: #0b0b0b;  /* text on marker/dimension fills */
     --radius: 2px;
 
-    --font-black: 'Frank Black', sans-serif;     /* headlines, data */
-    --font-bold: 'Frank Bold', sans-serif;       /* buttons, labels, chips */
-    --font-regular: 'Frank Regular', sans-serif; /* body, inputs */
+    /* Montserrat is linked from Google Fonts in index.html */
+    --font: 'Montserrat', sans-serif;
+    --w-black: 900;        /* headlines, data */
+    --w-bold: 700;         /* buttons, labels, chips */
+    --w-regular: 400;      /* body, inputs */
 
     /* Panels float over the globe, so they are very slightly translucent */
     --sheet-glass: rgba(19, 74, 118, 0.94);
@@ -24,34 +26,18 @@
     --control-height: 44px;
 }
 
-/* Frank weights are baked into each file - never add font-weight on top */
-@font-face {
-    font-family: 'Frank Black';
-    src: url('fonts/Frank-Black.otf') format('opentype');
-    font-display: swap;
-}
-
-@font-face {
-    font-family: 'Frank Bold';
-    src: url('fonts/Frank-Bold.otf') format('opentype');
-    font-display: swap;
-}
-
-@font-face {
-    font-family: 'Frank Regular';
-    src: url('fonts/Frank-Regular.otf') format('opentype');
-    font-display: swap;
-}
-
 * {
     box-sizing: border-box;
 }
 
 h1,
-h2,
+h2 {
+    font-weight: var(--w-black);
+}
+
 b,
 strong {
-    font-weight: normal;
+    font-weight: var(--w-bold);
 }
 
 html {
@@ -64,7 +50,8 @@ body {
     overflow: hidden;
     width: 100vw;
     height: 100vh;
-    font-family: var(--font-regular);
+    font-family: var(--font);
+    font-weight: var(--w-regular);
     font-size: 14px;
     line-height: 1.45;
     color: var(--paper);
@@ -134,10 +121,9 @@ body {
 
 #ui-layer h1 {
     margin: 0;
-    font-family: var(--font-black);
-    font-size: 24px;
-    line-height: 1.05;
-    letter-spacing: 0.01em;
+    font-size: 22px;
+    line-height: 1.1;
+    letter-spacing: -0.01em;
 }
 
 #ui-layer p {
@@ -180,6 +166,7 @@ body {
     color: var(--paper);
     border: 1px solid var(--line);
     border-radius: var(--radius);
+    font-family: var(--font);
     font-size: 14px;
     transition: background-color 0.15s, border-color 0.15s, filter 0.15s;
 }
@@ -187,7 +174,7 @@ body {
 #search-input,
 #route-search-input,
 #category-filter {
-    font-family: var(--font-regular);
+    font-weight: var(--w-regular);
 }
 
 #search-input,
@@ -226,8 +213,8 @@ body {
 #reset-btn,
 #help-btn {
     cursor: pointer;
-    font-family: var(--font-bold);
-    letter-spacing: 0.04em;
+    font-weight: var(--w-bold);
+    letter-spacing: 0.02em;
 }
 
 /* Primary action: Marker fill, near-black text */
@@ -315,7 +302,7 @@ body {
 }
 
 .suggestion-item .iata {
-    font-family: var(--font-bold);
+    font-weight: var(--w-bold);
     color: var(--dimension);
     margin-right: 6px;
 }
@@ -355,9 +342,10 @@ body {
 }
 
 .route-iata {
-    font-family: var(--font-black);
-    font-size: 32px;
+    font-weight: var(--w-black);
+    font-size: 30px;
     line-height: 1;
+    letter-spacing: -0.02em;
     color: var(--paper);
     margin-bottom: 6px;
 }
@@ -373,8 +361,8 @@ body {
 
 /* The dash between the codes echoes the orange highlighted arc */
 .route-separator {
-    font-family: var(--font-black);
-    font-size: 32px;
+    font-weight: var(--w-black);
+    font-size: 30px;
     line-height: 1;
     color: var(--marker);
 }
@@ -394,14 +382,14 @@ body {
 }
 
 .route-stat .label {
-    font-family: var(--font-bold);
+    font-weight: var(--w-bold);
     font-size: 12px;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.04em;
     color: var(--muted);
 }
 
 .route-stat .value {
-    font-family: var(--font-black);
+    font-weight: var(--w-black);
     font-size: 18px;
     color: var(--paper);
 }
@@ -415,10 +403,10 @@ body {
     background: var(--ocean-glass);
     color: var(--paper);
     border-radius: var(--radius);
-    font-family: var(--font-bold);
+    font-weight: var(--w-bold);
     font-size: 11px;
     line-height: 1.3;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.02em;
     pointer-events: none;
 }
 
@@ -439,13 +427,10 @@ body {
     color: var(--paper);
     border: 1px solid var(--line);
     border-radius: var(--radius);
-    font-family: var(--font-regular);
+    font-family: var(--font);
+    font-weight: var(--w-regular);
     font-size: 13px;
     line-height: 1.4;
-}
-
-#globeViz .float-tooltip-kap b {
-    font-family: var(--font-bold);
 }
 
 /* UI Toggle Button */
@@ -506,9 +491,9 @@ body {
 
 .modal-content h2 {
     margin: 0 0 30px 0;
-    font-family: var(--font-black);
-    font-size: 28px;
-    line-height: 1.1;
+    font-size: 26px;
+    line-height: 1.15;
+    letter-spacing: -0.01em;
     color: var(--paper);
     text-align: center;
 }
@@ -527,7 +512,7 @@ body {
     border: 1px solid transparent;
     border-radius: var(--radius);
     color: var(--paper);
-    font-family: var(--font-regular);
+    font-family: var(--font);
     font-size: 28px;
     line-height: 1;
     cursor: pointer;
@@ -677,7 +662,7 @@ body {
     }
 
     #ui-layer h1 {
-        font-size: 20px;
+        font-size: 19px;
     }
 
     #ui-layer p {
@@ -702,7 +687,7 @@ body {
     }
 
     .modal-content h2 {
-        font-size: 22px;
+        font-size: 21px;
         margin-bottom: 20px;
     }
 

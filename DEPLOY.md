@@ -16,9 +16,6 @@ routes.csv
 2 hub view.png
 3 route view.jpg
 logo.svg
-fonts/Frank-Black.otf
-fonts/Frank-Bold.otf
-fonts/Frank-Regular.otf
 .htaccess
 ```
 

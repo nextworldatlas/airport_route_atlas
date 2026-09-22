@@ -243,6 +243,16 @@ const globe = Globe()
     })
     .htmlElement(createLabelElement);
 
+// Size the globe from the window rather than letting it measure #globeViz.
+// A stylesheet still loading (the webfont) blocks layout, so the measured
+// container can be 0 tall at startup and the canvas never recovers.
+function resizeGlobe() {
+    globe.width(window.innerWidth).height(window.innerHeight);
+}
+
+resizeGlobe();
+window.addEventListener('resize', resizeGlobe);
+
 // Configure controls for faster zoom and pan
 globe.controls().zoomSpeed = 2;      // Default is 1, increase for faster zoom
 globe.controls().rotateSpeed = 1;    // Default is 0.5, increase for faster pan/rotation

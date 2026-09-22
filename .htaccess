@@ -13,7 +13,6 @@ Options -Indexes
 # CSV is served as a download by default on some hosts; keep it inline text.
 <IfModule mod_mime.c>
     AddType text/csv .csv
-    AddType font/otf .otf
     AddType image/svg+xml .svg
     AddCharset UTF-8 .csv .css .js .html
 </IfModule>
@@ -22,7 +21,7 @@ Options -Indexes
 <IfModule mod_deflate.c>
     AddOutputFilterByType DEFLATE text/html text/css text/csv text/plain
     AddOutputFilterByType DEFLATE application/javascript text/javascript
-    AddOutputFilterByType DEFLATE image/svg+xml font/otf
+    AddOutputFilterByType DEFLATE image/svg+xml
 </IfModule>
 
 <IfModule mod_expires.c>
@@ -41,8 +40,7 @@ Options -Indexes
     ExpiresByType image/jpeg "access plus 1 month"
     ExpiresByType image/png "access plus 1 month"
 
-    # Fonts never change; the logo doubles as the favicon.
-    ExpiresByType font/otf "access plus 1 month"
+    # The logo doubles as the favicon.
     ExpiresByType image/svg+xml "access plus 1 week"
 </IfModule>
 
