@@ -81,9 +81,12 @@ subdomain, or the redirect will lead to a certificate warning.
 - `https://airportroutes.nextworldatlas.com` loads the globe.
 - The "Loading flight data..." message clears — that means `airports.csv` and
   `routes.csv` were fetched successfully.
-- Browser devtools → Network shows `content-encoding: gzip` on the two CSVs
-  (that's the `.htaccess` compression working; it takes them from ~850 KB to
-  roughly a quarter of that).
+- Browser devtools → Network shows `content-encoding: br` (or `gzip`) on the two
+  CSVs — Hostinger's CDN compresses at the edge, which takes them from ~850 KB
+  to roughly a quarter of that.
+- `main.js` comes back with `cache-control: max-age=3600`, not a week. A week
+  means the `AddType application/javascript .js` line in `.htaccess` is not
+  taking effect and visitors will be stuck on a stale `main.js` after a deploy.
 
 ## Notes
 

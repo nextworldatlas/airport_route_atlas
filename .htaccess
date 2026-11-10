@@ -14,6 +14,10 @@ Options -Indexes
 <IfModule mod_mime.c>
     AddType text/csv .csv
     AddType image/svg+xml .svg
+    # Hostinger serves .js as application/x-javascript by default, which no
+    # ExpiresByType rule below matches - main.js then inherits the server
+    # default of a week instead of the hour intended. Pin the modern type.
+    AddType application/javascript .js
     AddCharset UTF-8 .csv .css .js .html
 </IfModule>
 
@@ -35,6 +39,8 @@ Options -Indexes
     ExpiresByType text/css "access plus 1 hour"
     ExpiresByType application/javascript "access plus 1 hour"
     ExpiresByType text/javascript "access plus 1 hour"
+    # Belt and braces, in case the AddType above is overridden server-side.
+    ExpiresByType application/x-javascript "access plus 1 hour"
 
     # Screenshots only change when the UI is redesigned.
     ExpiresByType image/jpeg "access plus 1 month"
